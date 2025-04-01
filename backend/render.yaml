@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: shreds-backend
+    env: python
+    plan: free
+    buildCommand: ""
+    startCommand: gunicorn core.wsgi:application
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: core.settings
+      - key: PYTHON_VERSION
+        value: 3.11
+      - fromDatabase:
+          name: shreds-db
+          property: connectionString
+          key: DATABASE_URL
+
+databases:
+  - name: shreds-db
