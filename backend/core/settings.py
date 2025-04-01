@@ -38,9 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-	'users',
+    'rest_framework',
     'rest_framework_simplejwt',
     'corsheaders',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -129,12 +130,14 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 REST_FRAMEWORK = {
-    'DEFAULT_RENDERER_CLASSES': (
-        'rest_framework.renderers.JSONRenderer',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     )
 }
 
 
+# Enable frontend-backend link
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://your-vercel-domain.vercel.app",  # add this only for deployed
 ]
