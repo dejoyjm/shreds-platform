@@ -139,5 +139,6 @@ REST_FRAMEWORK = {
 # Enable frontend-backend link
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
-    "https://your-vercel-domain.vercel.app",  # add this only for deployed
+    "https://shreds-platform.vercel.app",
+    "https://shreds-platform-5f0o1cbrr-dejoy-mathais-projects.vercel.app",
 ]
