@@ -1,0 +1,31 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+
+{% block content %}
+  {% if summary %}
+    <h2>Summary of Available Questions</h2>
+    <table class="admin-summary">
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Easy</th>
+          <th>Moderate</th>
+          <th>Hard</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in summary %}
+          <tr>
+            <td>{{ row.0 }}</td>
+            <td>{{ row.1 }}</td>
+            <td>{{ row.2 }}</td>
+            <td>{{ row.3 }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <br>
+  {% endif %}
+
+  {{ block.super }}
+{% endblock %}

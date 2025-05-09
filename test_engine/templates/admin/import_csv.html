@@ -1,0 +1,14 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+  <h1>Upload Questions CSV</h1>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <input type="submit" value="Upload CSV" class="default">
+  </form>
+
+  <p>Make sure your CSV file has headers: <code>text, options, correct_answer</code></p>
+  <p><strong>Note:</strong> The options column should be a valid JSON list (e.g., <code>["A", "B", "C", "D"]</code>).</p>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<h1>Import Questions from CSV</h1>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <label for="category_id">Category:</label>
+    <select name="category_id" required>
+        {% for cat in categories %}
+            <option value="{{ cat.id }}">{{ cat.name }}</option>
+        {% endfor %}
+    </select>
+    <br><br>
+
+    <label for="csv_file">CSV File:</label>
+    {{ form.csv_file }}
+    <br><br>
+
+    <input type="submit" value="Upload">
+</form>
+
+{% endblock %}
