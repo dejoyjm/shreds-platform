@@ -8,8 +8,8 @@ class Command(BaseCommand):
         User = get_user_model()
         if not User.objects.filter(username="dejoy.mathai").exists():
             User.objects.create_superuser(
-                username="dejoy.mathai",
-                email="dejoy@shreds.in",
+                username="admin",
+                email="dejoyjm@gmail.com",
                 password="password"
             )
             self.stdout.write(self.style.SUCCESS("✅ Superuser created"))
