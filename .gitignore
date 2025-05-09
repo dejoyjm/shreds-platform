@@ -8,3 +8,5 @@ venv311/
 *.sqlite3
 media/
 
+venv/
+venv311/
