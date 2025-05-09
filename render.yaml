@@ -18,3 +18,8 @@ services:
 databases:
   - name: shreds-db
 
+preDeployCommand: |
+  python manage.py migrate
+  python manage.py collectstatic --noinput
+  python manage.py create_initial_superuser
+
