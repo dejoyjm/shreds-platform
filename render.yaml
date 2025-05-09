@@ -3,6 +3,7 @@ services:
     name: shreds-platform
     env: python
     plan: free
+    staticPublishPath: staticfiles
     buildCommand: pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
     startCommand: gunicorn assessments.wsgi:application
     preDeployCommand: |
