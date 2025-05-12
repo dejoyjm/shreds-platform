@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import dj_database_url
 
+DEBUG = False
 
 DATABASES = {
     'default': dj_database_url.config(default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'))
@@ -134,7 +135,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'backend', 'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 if DEBUG:
     STATICFILES_DIRS = [
