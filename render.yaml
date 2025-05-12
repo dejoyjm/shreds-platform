@@ -5,15 +5,13 @@ services:
     plan: free
     rootDir: backend
     staticPublishPath: staticfiles
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn assessments.wsgi:application
+    buildCommand: pip install -r requirements.txt && python manage.py migrate && python manage.py loaddata fixtures/initial_data.json && python manage.py collectstatic --noinput
     preDeployCommand: |
-      python manage.py migrate
-      python manage.py loaddata fixtures/initial_data.json
-      python manage.py collectstatic --noinput
       echo "== Checking DB users =="
       python manage.py dump_users
-      echo "== Done =="
+
+    startCommand: gunicorn assessments.wsgi:application
+
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: assessments.settings
