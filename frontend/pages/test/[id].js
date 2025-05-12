@@ -53,62 +53,84 @@ export default function TakeTest() {
     }
   };
 
-  if (error) return <p className="text-red-500 p-6">{error}</p>;
-  if (!testData) return <p className="p-6">Loading test...</p>;
+  if (error) return <p style={{ color: 'red', padding: '1rem' }}>{error}</p>;
+  if (!testData) return <p style={{ padding: '1rem' }}>Loading test...</p>;
 
-    return (
-      <div className="p-6 max-w-4xl mx-auto">
-        <div className="border-b pb-4 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800">{testData.test.name}</h1>
-          <p className="text-gray-600 mt-2">{testData.test.description}</p>
-        </div>
-
-        <form className="space-y-6">
-          {testData.questions.map((q, index) => {
-            const options = Array.isArray(q.options)
-              ? q.options
-              : JSON.parse(q.options || "[]");
-
-            return (
-              <div key={q.id} className="p-4 border rounded shadow-sm">
-                <p className="font-medium mb-3 text-gray-800">
-                  {index + 1}. {q.text}
-                </p>
-                <div className="space-y-1">
-                  {options.map((opt, idx) => (
-                    <label key={idx} className="block text-gray-700">
-                      <input
-                        type="radio"
-                        name={`q-${q.id}`}
-                        value={opt}
-                        checked={answers[q.id] === opt}
-                        onChange={() => handleSelect(q.id, opt)}
-                        className="mr-2"
-                      />
-                      {opt}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </form>
-
-        {!submitted ? (
-          <button
-            onClick={handleSubmit}
-            className="mt-6 bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
-          >
-            Submit Test
-          </button>
-        ) : (
-          <div className="mt-6 p-4 bg-green-100 border border-green-400 rounded">
-            <p className="text-green-800 font-semibold">
-              Test Submitted! Your score: {score} / {testData.questions.length}
-            </p>
-          </div>
-        )}
+  return (
+    <div style={{ padding: '1rem', maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ borderBottom: '1px solid #ccc', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+        <h1 style={{ fontSize: '1.8rem', margin: 0 }}>{testData.test.name}</h1>
+        <p style={{ color: '#555' }}>{testData.test.description}</p>
       </div>
-    );
 
+      <form>
+        {testData.questions.map((q, index) => {
+          const options = Array.isArray(q.options)
+            ? q.options
+            : JSON.parse(q.options || "[]");
+
+          return (
+            <div
+              key={q.id}
+              style={{
+                padding: '1rem',
+                border: '1px solid #ddd',
+                borderRadius: '6px',
+                marginBottom: '1.5rem',
+                boxShadow: '0 1px 4px rgba(0, 0, 0, 0.06)',
+              }}
+            >
+              <p style={{ fontWeight: 'bold' }}>
+                {index + 1}. {q.text}
+              </p>
+              {options.map((opt, idx) => (
+                <label key={idx} style={{ display: 'block', margin: '0.5rem 0' }}>
+                  <input
+                    type="radio"
+                    name={`q-${q.id}`}
+                    value={opt}
+                    checked={answers[q.id] === opt}
+                    onChange={() => handleSelect(q.id, opt)}
+                    style={{ marginRight: '0.5rem' }}
+                  />
+                  {opt}
+                </label>
+              ))}
+            </div>
+          );
+        })}
+      </form>
+
+      {!submitted ? (
+        <button
+          onClick={handleSubmit}
+          type="button"
+          style={{
+            padding: '0.6rem 1.5rem',
+            backgroundColor: '#0070f3',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            cursor: 'pointer',
+          }}
+        >
+          Submit Test
+        </button>
+      ) : (
+        <div
+          style={{
+            marginTop: '1.5rem',
+            padding: '1rem',
+            backgroundColor: '#e6ffed',
+            border: '1px solid #b2f5ea',
+            borderRadius: '6px',
+          }}
+        >
+          <p style={{ color: '#276749', fontWeight: 'bold' }}>
+            Test Submitted! Your score: {score} / {testData.questions.length}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }

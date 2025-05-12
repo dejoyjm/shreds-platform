@@ -9,11 +9,15 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+TIME_ZONE = "Asia/Kolkata"
+USE_TZ = True
 
 
 # Quick-start development settings - unsuitable for production
@@ -43,6 +47,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'assessments',
     'users',
+    'test_engine',
 ]
 
 MIDDLEWARE = [
@@ -63,6 +68,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],  # ✅ Add this
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -114,8 +120,6 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
-
 USE_I18N = True
 
 USE_TZ = True
@@ -124,7 +128,10 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]  # only if you have custom assets
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -144,4 +151,10 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://shreds-platform.vercel.app",
     "https://shreds-platform-5f0o1cbrr-dejoy-mathais-projects.vercel.app",
+    "https://temp-test-platform.vercel.app",
+    "https://temp-test-platform.shredsindia.org",
 ]
+
+#Ensure MEDIA_URL is available in dev
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

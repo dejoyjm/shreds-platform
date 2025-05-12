@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: shreds-platform
+    env: python
+    plan: free
+    staticPublishPath: staticfiles
+    buildCommand: pip install -r requirements.txt && python manage.py migrate && python manage.py collectstatic --noinput
+    startCommand: gunicorn assessments.wsgi:application
+    preDeployCommand: |
+      python manage.py loaddata fixtures/initial_data.json
+      python manage.py collectstatic --noinput
+      echo "== Checking DB users =="
+      python manage.py dump_users
+      echo "== Done =="
+
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: assessments.settings
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - fromDatabase:
+          name: shreds-db
+          property: connectionString
+          key: DATABASE_URL
+
+databases:
+  - name: shreds-db
+
+
+
