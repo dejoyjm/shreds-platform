@@ -20,3 +20,10 @@ backend/venv/
 # Node
 node_modules/
 frontend/.next/
+
+# Ignore dev static directory
+/static/
+
+# Don't ignore staticfiles
+!staticfiles/
+
