@@ -88,3 +88,4 @@ yarl==1.9.2
 yfinance==0.2.48
 djangorestframework-simplejwt
 tzdata>=2022.1
+"dj-database-url" 
