@@ -116,7 +116,7 @@ export default function StartSessionPage() {
         ) : (
           <p style={{ color: "gray", fontStyle: "italic", marginTop: "0.5rem" }}>
             You don&apos;t have any currently valid test assignments.<br />
-            Your test window might have expired or the next one isn't open yet.<br />
+            Your test window might have expired or the next one isn&apos;t open yet.<br />
             Please check back later or contact your coordinator.
           </p>
         )}
