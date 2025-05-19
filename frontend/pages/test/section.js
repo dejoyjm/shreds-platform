@@ -1,24 +1,58 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { API_BASE_URL } from "@/utils/api";
 import toast from "react-hot-toast";
-
+import { useAntiCheat } from "@/utils/useAntiCheat";
 
 export default function SectionPage() {
   const router = useRouter();
+
+  useAntiCheat((reason) => {
+    console.warn("⚠️ Anti-cheat triggered:", reason);
+    toast.error(`Anti-cheat: ${reason}`);
+  });
+
+  useEffect(() => {
+    const handleAutoSubmit = () => {
+      const currentSectionData = sectionDataRef.current;
+      if (!currentSectionData?.questions || currentSectionData.questions.length === 0) {
+        toast.error("⏳ Preparing section for auto-submit...");
+        setTimeout(() => window.dispatchEvent(new CustomEvent("autoSubmitDueToCheating")), 1000);
+        return;
+      }
+      setTimeout(() => {
+        setAutoSubmitted(true);
+        handleSubmit(true);
+      }, 50);
+    };
+
+    window.addEventListener("autoSubmitDueToCheating", handleAutoSubmit);
+    return () => window.removeEventListener("autoSubmitDueToCheating", handleAutoSubmit);
+  }, []);
+
   const [loading, setLoading] = useState(true);
   const [sectionData, setSectionData] = useState(null);
+  const sectionDataRef = useRef(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState(null);
   const [responses, setResponses] = useState({});
   const [autoSubmitted, setAutoSubmitted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
 
-  const session = typeof window !== "undefined" ? JSON.parse(localStorage.getItem("sessionData")) : null;
+  const session = typeof window !== "undefined"
+    ? JSON.parse(localStorage.getItem("sessionData"))
+    : null;
 
   const handleSubmit = async (auto = false) => {
+    if (!sectionData?.questions || sectionData.questions.length === 0) {
+      console.warn("⛔ Cannot submit: sectionData not ready");
+      toast.error("⛔ Section not ready yet. Please wait...");
+      return;
+    }
+
     const saveEndpoint = "/api/save-responses/";
     const questions = sectionData.questions;
+
     const payload = questions.map((q) => ({
       question: q.id,
       answer: ["A", "B", "C", "D"][responses[q.id]],
@@ -33,7 +67,7 @@ export default function SectionPage() {
           test: session.test_id,
           attempt_number: session.attempt_number,
           responses: payload,
-          section_id: sectionData.section_id,
+          section_id: sectionData?.section_id || session?.section_id,
           section_complete: !auto,
           auto: auto
         }),
@@ -74,16 +108,26 @@ export default function SectionPage() {
         toast.success("✅ Section saved and test completed.");
         router.push("/test");
       } else {
-        toast.success(auto ? "⏰ Time up. Section auto-submitted. Moving to next section..." : "✅ Section saved. Loading next section...");
-        localStorage.setItem("sessionData", JSON.stringify({
-          candidate_id: session.candidate_id,
-          test_id: session.test_id,
-          attempt_number: session.attempt_number,
-        }));
+        toast.success(auto
+          ? "⏰ Time up or violation. Section auto-submitted."
+          : "✅ Section saved. Loading next section...");
+
+        localStorage.setItem(`questions_${nextData.section_id}`, JSON.stringify(nextData.questions || []));
+
+        setSectionData({ ...nextData, questions: nextData.questions || [] });
+        sectionDataRef.current = { ...nextData, questions: nextData.questions || [] };
+        setTimeLeft(nextData.time_left_seconds);
+        setCurrentQuestionIndex(0);
+        setResponses({});
         localStorage.removeItem("savedResponses");
         localStorage.removeItem("currentQuestionIndex");
-        window.location.reload();
+
+        localStorage.setItem("sessionData", JSON.stringify({
+          ...session,
+          section_id: nextData.section_id,
+        }));
       }
+
     } catch (error) {
       console.error("❌ Submission or resume failed", error);
       toast.error("Something went wrong while saving or resuming. Please try again.");
@@ -100,17 +144,14 @@ export default function SectionPage() {
   };
 
   useEffect(() => {
-
-    // ✅ Check if test was already completed — short-circuit if true
     if (localStorage.getItem("testCompleted") === "true") {
       console.log("🛑 Test already completed. Skipping resume.");
       toast.success("✅ You have already completed the test. Redirecting...");
-      router.push("/test"); // or another summary page
+      router.push("/test");
       return;
     }
 
-    // ✅ Restore cached responses and index if available
-   const cached = localStorage.getItem("savedResponses");
+    const cached = localStorage.getItem("savedResponses");
     if (cached) {
       setResponses(JSON.parse(cached));
     }
@@ -118,17 +159,31 @@ export default function SectionPage() {
     if (savedIndex) {
       setCurrentQuestionIndex(parseInt(savedIndex));
     }
+
+    const cachedQuestions = localStorage.getItem(`questions_${session?.section_id}`);
+    if (cachedQuestions) {
+      setSectionData({
+        ...session,
+        questions: JSON.parse(cachedQuestions)
+      });
+    }
   }, []);
 
   useEffect(() => {
+    if (!sectionData?.section_id || autoSubmitted) return;
 
-    // ✅ Skip resume-section fetch if test is already completed
+    if (sectionData.time_left_seconds !== undefined) {
+      setTimeLeft(sectionData.time_left_seconds);
+    }
+  }, [sectionData?.section_id]);
+
+  useEffect(() => {
     if (localStorage.getItem("testCompleted") === "true") {
       console.log("🛑 Test already completed. Skipping resume fetch.");
       toast.success("✅ You have already completed the test. Redirecting...");
-      router.push("/test"); // or another summary page
+      router.push("/test");
       return;
-  }
+    }
     if (!session) {
       toast.success("No active session found");
       router.push("/test");
@@ -148,27 +203,23 @@ export default function SectionPage() {
         if (!res.ok) throw new Error(`Resume failed: ${res.status}`);
         return res.json();
       })
-        .then((data) => {
-          if (data.status === "completed") {
-            toast.success("✅ Section saved and test completed. You may now close this window.");
-            // 🛑 Prevent infinite reload/resume
-            localStorage.removeItem("sessionData");
-            localStorage.removeItem("savedResponses");
-            localStorage.removeItem("currentQuestionIndex");
-              // Set a flag so no further resume request is made
+      .then((data) => {
+        if (data.status === "completed") {
+          toast.success("✅ Section saved and test completed. You may now close this window.");
+          localStorage.removeItem("sessionData");
+          localStorage.removeItem("savedResponses");
+          localStorage.removeItem("currentQuestionIndex");
           localStorage.setItem("testCompleted", "true");
           setLoading(false);
+          return;
+        }
 
-            //router.push("/test");
-            return;
-          }
+        localStorage.setItem(`questions_${data.section_id}`, JSON.stringify(data.questions || []));
 
-          setSectionData({ ...data, questions: data.questions || [] });
-          setTimeLeft(data.time_left_seconds);
-          console.log("📦 Received time_left_seconds:", data.time_left_seconds);
-        })
-
-
+        setSectionData({ ...data, questions: data.questions || [] });
+        setTimeLeft(data.time_left_seconds ?? 0);
+        console.log("📦 Received time_left_seconds:", data.time_left_seconds);
+      })
       .catch((err) => {
         console.error("Resume section failed:", err);
         toast.error("Something went wrong while loading section.");
@@ -177,9 +228,8 @@ export default function SectionPage() {
       .finally(() => setLoading(false));
   }, [router]);
 
-
   useEffect(() => {
-    if (timeLeft === null || autoSubmitted) return;
+    if (timeLeft === null || autoSubmitted || !sectionDataRef.current?.section_id) return;
 
     if (timeLeft <= 0) {
       console.warn("⏰ Triggering auto-submit because timeLeft <= 0");

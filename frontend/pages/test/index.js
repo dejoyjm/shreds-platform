@@ -51,6 +51,7 @@ export default function StartSessionPage() {
     if (now < validFrom) return alert("Test has not opened yet.");
     if (now > validTo) return alert("Test window is closed.");
 
+    sessionStorage.removeItem("violationCount");
     await document.documentElement.requestFullscreen();
 
     const res = await fetch(`${API_BASE_URL}/api/start-session/`, {
@@ -65,6 +66,7 @@ export default function StartSessionPage() {
       return;
     }
 
+    // ✅ Set session in localStorage
     localStorage.setItem("sessionData", JSON.stringify({
       candidate_id: candidateId,
       test_id: selectedTest.test_id,
@@ -75,12 +77,16 @@ export default function StartSessionPage() {
       section_start_time: data.section_start_time,
     }));
 
-    localStorage.removeItem("testCompleted"); // ✅ Clear stale completion flag
+    localStorage.removeItem("testCompleted");
+    sessionStorage.removeItem("violationCount");
 
-    console.log("Session Data Set:", { candidateId, selectedTest, data });
+    // ✅ ⚠️ Now request fullscreen (must not be inside async chain)
+    document.documentElement.requestFullscreen().catch((err) => {
+      console.warn("Fullscreen failed", err);
+    });
 
+    // ✅ Navigate only after fullscreen attempt
     router.push("/test/section");
-
   };
 
   return (

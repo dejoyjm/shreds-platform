@@ -24,6 +24,8 @@ from .models import (
     TestAssignment, CandidateTestSession, SectionStatus, ArchivedResponse
 )
 
+from django.utils.html import format_html
+from django.utils.safestring import mark_safe
 # ---- CSV Upload Form ---- #
 
 class CSVUploadForm(forms.Form):
@@ -702,11 +704,22 @@ class ScoreReportAdmin(admin.ModelAdmin):
             path = generate_score_report_excel(candidate, test, attempt, report_data)
             rel_path = os.path.relpath(path, settings.MEDIA_ROOT)
             url = settings.MEDIA_URL + rel_path.replace("\\", "/")
+            full_url = request.build_absolute_uri(url)
 
-            messages.append(f"<li><b>{candidate.name}</b>: <a href='{url}' target='_blank'>Download Report</a></li>")
+            # Extract version number from filename, if any (e.g. _v7.xlsx)
+            version_match = re.search(r'_v(\d+)\.xlsx$', rel_path)
+            version_str = f"v{version_match.group(1)}" if version_match else "v?"
+
+            messages.append(format_html(
+                "<li><b>{}</b> — Attempt {} — {}: <a href='{}' target='_blank'>Download Report</a></li>",
+                candidate.name,
+                attempt,
+                version_str,
+                full_url
+            ))
 
         if messages:
-            self.message_user(request, format_html("<ul>{}</ul>", "".join(messages)))
+            self.message_user(request, mark_safe("<ul>{}</ul>".format("".join(messages))))
         else:
             self.message_user(request, "No reports generated.")
 
