@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
+import { API_BASE_URL } from "@/utils/api";
 
 export default function LoginPage() {
   const [username, setUsername] = useState('');
@@ -12,7 +13,7 @@ export default function LoginPage() {
     setError('');
 
     try {
-      const res = await fetch('http://localhost:8000/api/token/', {
+      const res = await fetch(`${API_BASE_URL}/api/token/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),

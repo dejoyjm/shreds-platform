@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { useAntiCheat } from "../../utils/useAntiCheat";
+import { API_BASE_URL } from "@/utils/api";
 
 export default function StartSessionPage() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function StartSessionPage() {
 
   const handleVerify = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/verify-secrets/", {
+      const res = await fetch(`${API_BASE_URL}/api/verify-secrets/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, mobile, secret1, secret2 }),
@@ -52,7 +53,7 @@ export default function StartSessionPage() {
 
     await document.documentElement.requestFullscreen();
 
-    const res = await fetch("http://localhost:8000/api/start-session/", {
+    const res = await fetch(`${API_BASE_URL}/api/start-session/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ candidate: candidateId, test: selectedTest.test_id }),

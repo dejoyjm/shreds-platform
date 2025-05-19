@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import { API_BASE_URL } from "@/utils/api";
 
 export default function SectionPage() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export default function SectionPage() {
     })).filter(r => r.answer !== undefined);
 
     try {
-      const saveRes = await fetch(`http://localhost:8000${saveEndpoint}`, {
+      const saveRes = await fetch(`${API_BASE_URL}${saveEndpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -48,7 +49,7 @@ export default function SectionPage() {
         return;
       }
 
-      const resumeRes = await fetch("http://localhost:8000/api/resume-section/", {
+      const resumeRes = await fetch(`${API_BASE_URL}/api/resume-section/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -132,7 +133,7 @@ export default function SectionPage() {
       return;
     }
 
-    fetch("http://localhost:8000/api/resume-section/", {
+    fetch(`${API_BASE_URL}/api/resume-section/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -216,7 +217,7 @@ export default function SectionPage() {
     setResponses(updatedResponses);
     localStorage.setItem("savedResponses", JSON.stringify(updatedResponses));
 
-    fetch("http://localhost:8000/api/save-response/", {
+    fetch(`${API_BASE_URL}/api/save-response/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
