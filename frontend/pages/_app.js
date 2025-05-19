@@ -1,11 +1,5 @@
 // pages/_app.js
-import '../src/styles/globals.css'
-
-export default function App({ Component, pageProps }) {
-  return <Component {...pageProps} />
-}
-
-// frontend/pages/_app.js
+import '../src/styles/globals.css';
 import { Toaster } from 'react-hot-toast';
 
 function MyApp({ Component, pageProps }) {
@@ -18,4 +12,3 @@ function MyApp({ Component, pageProps }) {
 }
 
 export default MyApp;
-
