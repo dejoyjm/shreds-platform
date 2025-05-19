@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { API_BASE_URL } from "@/utils/api";
+import toast from "react-hot-toast";
+
 
 export default function SectionPage() {
   const router = useRouter();
@@ -44,7 +46,7 @@ export default function SectionPage() {
       const saveJson = await saveRes.json();
 
       if (saveJson.status === "completed") {
-        alert("✅ Section saved and test completed.");
+        toast.success("✅ Section saved and test completed.");
         router.push("/test");
         return;
       }
@@ -61,7 +63,7 @@ export default function SectionPage() {
 
       if (!resumeRes.ok) {
         console.error("❌ Resume failed with status", resumeRes.status);
-        alert("Section saved but failed to load next section.");
+        toast.error("Section saved but failed to load next section.");
         router.push("/test");
         return;
       }
@@ -69,10 +71,10 @@ export default function SectionPage() {
       const nextData = await resumeRes.json();
 
       if (nextData.status === "completed") {
-        alert("✅ Section saved and test completed.");
+        toast.success("✅ Section saved and test completed.");
         router.push("/test");
       } else {
-        alert(auto ? "⏰ Time up. Section auto-submitted. Moving to next section..." : "✅ Section saved. Loading next section...");
+        toast.success(auto ? "⏰ Time up. Section auto-submitted. Moving to next section..." : "✅ Section saved. Loading next section...");
         localStorage.setItem("sessionData", JSON.stringify({
           candidate_id: session.candidate_id,
           test_id: session.test_id,
@@ -84,7 +86,7 @@ export default function SectionPage() {
       }
     } catch (error) {
       console.error("❌ Submission or resume failed", error);
-      alert("Something went wrong while saving or resuming. Please try again.");
+      toast.error("Something went wrong while saving or resuming. Please try again.");
     }
   };
 
@@ -102,7 +104,7 @@ export default function SectionPage() {
     // ✅ Check if test was already completed — short-circuit if true
     if (localStorage.getItem("testCompleted") === "true") {
       console.log("🛑 Test already completed. Skipping resume.");
-      alert("✅ You have already completed the test. Redirecting...");
+      toast.success("✅ You have already completed the test. Redirecting...");
       router.push("/test"); // or another summary page
       return;
     }
@@ -123,12 +125,12 @@ export default function SectionPage() {
     // ✅ Skip resume-section fetch if test is already completed
     if (localStorage.getItem("testCompleted") === "true") {
       console.log("🛑 Test already completed. Skipping resume fetch.");
-      alert("✅ You have already completed the test. Redirecting...");
+      toast.success("✅ You have already completed the test. Redirecting...");
       router.push("/test"); // or another summary page
       return;
   }
     if (!session) {
-      alert("No active session found");
+      toast.success("No active session found");
       router.push("/test");
       return;
     }
@@ -148,7 +150,7 @@ export default function SectionPage() {
       })
         .then((data) => {
           if (data.status === "completed") {
-            alert("✅ Section saved and test completed. You may now close this window.");
+            toast.success("✅ Section saved and test completed. You may now close this window.");
             // 🛑 Prevent infinite reload/resume
             localStorage.removeItem("sessionData");
             localStorage.removeItem("savedResponses");
@@ -169,7 +171,7 @@ export default function SectionPage() {
 
       .catch((err) => {
         console.error("Resume section failed:", err);
-        alert("Something went wrong while loading section.");
+        toast.error("Something went wrong while loading section.");
         router.push("/test");
       })
       .finally(() => setLoading(false));
