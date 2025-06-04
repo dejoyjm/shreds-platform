@@ -27,3 +27,6 @@ frontend/.next/
 # Don't ignore staticfiles
 !staticfiles/
 
+#Media
+backend/media/
+

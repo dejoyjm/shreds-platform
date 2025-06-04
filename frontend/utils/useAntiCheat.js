@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import toast from "react-hot-toast";
 
-const ENABLE_ANTICHEAT = true;
+const ENABLE_ANTICHEAT = false;
 const MAX_VIOLATIONS = 3;
 let violationCount = 0;
 

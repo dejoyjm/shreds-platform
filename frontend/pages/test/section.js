@@ -3,9 +3,14 @@ import { useRouter } from "next/router";
 import { API_BASE_URL } from "@/utils/api";
 import toast from "react-hot-toast";
 import { useAntiCheat } from "@/utils/useAntiCheat";
+import PeriodicCapture from "@/components/PeriodicCapture";
+import { useProctoring } from "@/components/ProctoringContext";
+
+
 
 export default function SectionPage() {
   const router = useRouter();
+const { screenStream, cameraStream, baseFrequency, violationBoostFactor } = useProctoring();
 
   useAntiCheat((reason) => {
     console.warn("⚠️ Anti-cheat triggered:", reason);
@@ -39,9 +44,34 @@ export default function SectionPage() {
   const [autoSubmitted, setAutoSubmitted] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
 
-  const session = typeof window !== "undefined"
-    ? JSON.parse(localStorage.getItem("sessionData"))
-    : null;
+  let session = null;
+  if (typeof window !== "undefined") {
+    const raw = localStorage.getItem("sessionData") || sessionStorage.getItem("sessionData");
+    try {
+      session = JSON.parse(raw);
+    } catch (err) {
+      console.warn("❌ Failed to parse sessionData:", raw);
+    }
+  }
+
+  try {
+    const sessionToken = sessionStorage.getItem("proctoring_session_token");
+    const assignmentIdFromSession = sessionStorage.getItem("assignment_id");
+        if (assignmentIdFromSession && !session.assignment_id) {
+          session.assignment_id = parseInt(assignmentIdFromSession); // Ensure numeric
+        }
+
+    if (session && sessionToken && !session.session_token) {
+      session.session_token = sessionToken;
+      localStorage.setItem("sessionData", JSON.stringify(session));
+    }
+  } catch (err) {
+    console.warn("❌ Failed to patch session token into session:", err);
+  }
+
+  if (!session || !session.session_token) {
+    console.warn("🚫 Session object is missing or malformed:", session);
+  }
 
   const handleSubmit = async (auto = false) => {
     if (!sectionData?.questions || sectionData.questions.length === 0) {
@@ -114,18 +144,30 @@ export default function SectionPage() {
 
         localStorage.setItem(`questions_${nextData.section_id}`, JSON.stringify(nextData.questions || []));
 
+        const proctoringToken = sessionStorage.getItem("proctoring_session_token");
+        const updatedSession = {
+          ...session,
+          section_id: nextData.section_id,
+          session_token: proctoringToken,
+          assignment_id: nextData.assignment_id ?? session.assignment_id
+        };
+        localStorage.setItem("sessionData", JSON.stringify(updatedSession));
+        localStorage.removeItem("savedResponses");
+        localStorage.removeItem("currentQuestionIndex");
+        localStorage.removeItem(`questions_${session.section_id}`);
+        Object.keys(localStorage)
+          .filter(key => key.startsWith("questions_"))
+          .forEach(key => localStorage.removeItem(key));
+
+
         setSectionData({ ...nextData, questions: nextData.questions || [] });
         sectionDataRef.current = { ...nextData, questions: nextData.questions || [] };
         setTimeLeft(nextData.time_left_seconds);
         setCurrentQuestionIndex(0);
         setResponses({});
+        setAutoSubmitted(false);
         localStorage.removeItem("savedResponses");
         localStorage.removeItem("currentQuestionIndex");
-
-        localStorage.setItem("sessionData", JSON.stringify({
-          ...session,
-          section_id: nextData.section_id,
-        }));
       }
 
     } catch (error) {
@@ -143,31 +185,47 @@ export default function SectionPage() {
     handleSubmit(false);
   };
 
-  useEffect(() => {
-    if (localStorage.getItem("testCompleted") === "true") {
-      console.log("🛑 Test already completed. Skipping resume.");
-      toast.success("✅ You have already completed the test. Redirecting...");
-      router.push("/test");
-      return;
-    }
+    useEffect(() => {
+      if (localStorage.getItem("testCompleted") === "true") {
+        console.log("🛑 Test already completed. Skipping resume.");
+        toast.success("✅ You have already completed the test. Redirecting...");
+        router.push("/test");
+        return;
+      }
 
-    const cached = localStorage.getItem("savedResponses");
-    if (cached) {
-      setResponses(JSON.parse(cached));
-    }
-    const savedIndex = localStorage.getItem("currentQuestionIndex");
-    if (savedIndex) {
-      setCurrentQuestionIndex(parseInt(savedIndex));
-    }
+      const cached = localStorage.getItem("savedResponses");
+      if (cached) {
+        try {
+          setResponses(JSON.parse(cached));
+        } catch (err) {
+          console.warn("⚠️ Failed to parse savedResponses:", err);
+        }
+      }
 
-    const cachedQuestions = localStorage.getItem(`questions_${session?.section_id}`);
-    if (cachedQuestions) {
-      setSectionData({
-        ...session,
-        questions: JSON.parse(cachedQuestions)
-      });
-    }
-  }, []);
+      const savedIndex = localStorage.getItem("currentQuestionIndex");
+      if (savedIndex) {
+        setCurrentQuestionIndex(parseInt(savedIndex));
+      }
+
+      if (session?.section_id) {
+        const cachedQuestions = localStorage.getItem(`questions_${session.section_id}`);
+        if (cachedQuestions) {
+          try {
+            const parsedQuestions = JSON.parse(cachedQuestions);
+            const restored = {
+              ...session,
+              section_id: session.section_id,
+              questions: parsedQuestions,
+            };
+            setSectionData(restored);
+            sectionDataRef.current = restored;
+          } catch (err) {
+            console.warn("⚠️ Failed to parse cachedQuestions:", err);
+          }
+        }
+      }
+    }, []);
+
 
   useEffect(() => {
     if (!sectionData?.section_id || autoSubmitted) return;
@@ -216,6 +274,12 @@ export default function SectionPage() {
 
         localStorage.setItem(`questions_${data.section_id}`, JSON.stringify(data.questions || []));
 
+        const patchedSession = {
+          ...session,
+          assignment_id: data.assignment_id ?? session.assignment_id
+        };
+        localStorage.setItem("sessionData", JSON.stringify(patchedSession));
+
         setSectionData({ ...data, questions: data.questions || [] });
         setTimeLeft(data.time_left_seconds ?? 0);
         console.log("📦 Received time_left_seconds:", data.time_left_seconds);
@@ -255,6 +319,20 @@ export default function SectionPage() {
     localStorage.setItem("currentQuestionIndex", currentQuestionIndex.toString());
   }, [currentQuestionIndex]);
 
+  const sessionToken = sessionStorage.getItem("proctoring_session_token");
+  const assignmentIdFromSession = sessionStorage.getItem("assignment_id");
+        if (assignmentIdFromSession && !session.assignment_id) {
+          session.assignment_id = parseInt(assignmentIdFromSession); // Ensure numeric
+        }
+
+    const proctoringRequired = sessionStorage.getItem("proctoring_required") === "true";
+    const proctoringDone = sessionStorage.getItem("proctoring_session_done") === "1";
+
+    if (proctoringRequired && !proctoringDone) {
+      return <div>⚠️ Proctoring session not active. Please restart your test.</div>;
+    }
+
+
   if (loading) return <div>Loading section...</div>;
   if (!sectionData || !Array.isArray(sectionData.questions) || sectionData.questions.length === 0)
     return <div>No questions available in this section.</div>;
@@ -290,6 +368,37 @@ export default function SectionPage() {
       <p>
         ⏳ Time Left: {Math.floor(timeLeft / 60)}m {timeLeft % 60}s
       </p>
+      <>
+        {console.log("🧪 Proctoring session data for capture:", session)}
+        {session?.session_token && screenStream && (
+          <>
+            {console.log("🔁 Rendering PeriodicCapture with:", {
+              token: session.session_token,
+              screenStream,
+              candidateId: session.candidate_id,
+              assignmentId: session.assignment_id ?? sectionData.assignment_id
+            })}
+            {console.log("📦 SectionPage passing to PeriodicCapture:", {
+              baseFrequency,
+              violationBoostFactor,
+              screenStreamExists: !!screenStream,
+              sessionToken: session.session_token
+            })}
+
+            <PeriodicCapture
+              sessionToken={session.session_token}
+              candidateId={session.candidate_id}
+              assignmentId={session.assignment_id ?? sectionData.assignment_id}
+              screenStream={screenStream}
+              baseFrequency={baseFrequency || 60}
+              violationBoostFactor={violationBoostFactor || 1}
+            />
+
+          </>
+        )}
+
+      </>
+
       <hr style={{ margin: "1rem 0" }} />
 
       <div>
@@ -350,17 +459,39 @@ export default function SectionPage() {
       </div>
 
       {showSummary && (
-        <div style={{ marginTop: "2rem", border: "1px solid #ccc", padding: "1rem", backgroundColor: "#f9f9f9" }}>
-          <h3>🧾 Section Summary</h3>
-          <p>✅ Answered: {Object.keys(responses).length}</p>
-          <p>❓ Unanswered: {sectionData.questions.length - Object.keys(responses).length}</p>
-          <p>⏳ Time Left: {Math.floor(timeLeft / 60)}m {timeLeft % 60}s</p>
-          <p style={{ color: "red" }}>⚠️ You will not be able to return to this section after submission.</p>
-          <button onClick={confirmSubmit} style={{ marginTop: "1rem", backgroundColor: "#ef4444", color: "white", padding: "0.5rem 1rem", border: "none", borderRadius: "4px" }}>
-            ✅ Confirm Submit Section
-          </button>
-        </div>
-      )}
+          <div style={{ marginTop: "2rem", border: "1px solid #ccc", padding: "1rem", backgroundColor: "#f9f9f9" }}>
+            <h3>🧾 Section Summary</h3>
+            {(() => {
+              const actualQuestions = sectionData.questions || [];
+              const answeredCount = actualQuestions.filter(q => responses[q.id] !== undefined).length;
+              const unansweredCount = actualQuestions.length - answeredCount;
+              return (
+                <>
+                  <p>✅ Answered: {answeredCount}</p>
+                  <p>❓ Unanswered: {unansweredCount}</p>
+                  <p>⏳ Time Left: {Math.floor(timeLeft / 60)}m {timeLeft % 60}s</p>
+                  <p style={{ color: "red" }}>
+                    ⚠️ You will not be able to return to this section after submission.
+                  </p>
+                  <button
+                    onClick={confirmSubmit}
+                    style={{
+                      marginTop: "1rem",
+                      backgroundColor: "#ef4444",
+                      color: "white",
+                      padding: "0.5rem 1rem",
+                      border: "none",
+                      borderRadius: "4px",
+                    }}
+                  >
+                    ✅ Confirm Submit Section
+                  </button>
+                </>
+              );
+            })()}
+          </div>
+        )}
+
     </div>
   );
 }

@@ -1,21 +1,69 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useAntiCheat } from "../../utils/useAntiCheat";
 import { API_BASE_URL } from "@/utils/api";
+import { useProctoring } from "@/components/ProctoringContext";
+
 
 export default function StartSessionPage() {
   const router = useRouter();
   useAntiCheat();
 
+  const { setBaseFrequency, setViolationBoostFactor } = useProctoring();
   const [email, setEmail] = useState("acmathai@shredsindia.org");
   const [mobile, setMobile] = useState("9446571534");
   const [secret1, setSecret1] = useState("Test_Key_1");
   const [secret2, setSecret2] = useState("Test_Key_2");
+
   const [candidateId, setCandidateId] = useState(null);
   const [assignments, setAssignments] = useState([]);
   const [selectedTest, setSelectedTest] = useState(null);
   const [agreedToRules, setAgreedToRules] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
+
+  const verifyAndProceed = async (candidate, assignment) => {
+    sessionStorage.setItem("candidate_id", candidate);
+    sessionStorage.setItem("assignment_id", assignment);
+    sessionStorage.setItem("test_flow_started", "1");
+
+    try {
+      const check = await fetch(
+        `${API_BASE_URL}/api/proctoring/check-ready/?assignment_id=${assignment}&candidate_id=${candidate}`
+      );
+      const checkRes = await check.json();
+      console.log("🎯 Proctoring readiness response:", checkRes);
+
+      // 🔁 Push config to ProctoringContext
+      const freq = Number(checkRes?.proctoring_config?.periodic_screen_capture_sec || 60);
+      const boost = Number(checkRes?.proctoring_config?.violation_boost_factor || 1);
+      setBaseFrequency(freq);
+      setViolationBoostFactor(boost);
+      console.log("🧠 Context updated with:", { freq, boost });
+
+
+      if (!checkRes.enforce_proctoring) {
+        sessionStorage.setItem("proctoring_ready", "true");
+        sessionStorage.setItem("proctoring_session_done", "1");
+        return;
+      }
+
+      if (!checkRes.ready) {
+        console.warn("⚠️ Routing to proctoring-setup: missing required inputs", checkRes.reason);
+        sessionStorage.removeItem("proctoring_session_done");
+        router.push("/test/proctoring-setup");
+        return;
+      }
+
+      // All static setup done, go to session-level proctoring
+      console.log("✅ Static inputs done, proceeding to proctoring-session for live stream check.");
+      sessionStorage.removeItem("proctoring_ready");
+      sessionStorage.removeItem("proctoring_session_done");
+      router.push("/test/proctoring-session");
+    } catch (err) {
+      console.error("Check-ready failed", err);
+      setStatusMsg("Error checking proctoring readiness.");
+    }
+  };
 
   const handleVerify = async () => {
     try {
@@ -32,17 +80,55 @@ export default function StartSessionPage() {
       }
 
       setCandidateId(data.candidate_id);
-      setAssignments(data.assignments);
-      setStatusMsg("✅ Verified. Select a test to proceed.");
+      setAssignments(data.assignments || []);
+
+      sessionStorage.setItem("email", email);
+      sessionStorage.setItem("mobile", mobile);
+      sessionStorage.setItem("secret1", secret1);
+      sessionStorage.setItem("secret2", secret2);
+
+      if (data.assignments.length > 0) {
+        const proctoringDone = sessionStorage.getItem("proctoring_session_done");
+        if (proctoringDone !== "1") {
+          await verifyAndProceed(data.candidate_id, data.assignments[0].assignment_id);
+          return;
+        }
+      }
+
+      setStatusMsg("No assignments available.");
     } catch (err) {
       console.error("Verify failed", err);
       setStatusMsg("Error verifying candidate.");
     }
   };
 
+    useEffect(() => {
+      const candidate = sessionStorage.getItem("candidate_id");
+      const assignment = sessionStorage.getItem("assignment_id");
+      const flowStarted = sessionStorage.getItem("test_flow_started");
+      const proctoringReady = sessionStorage.getItem("proctoring_ready");
+      const proctoringDone = sessionStorage.getItem("proctoring_session_done");
+
+      console.log("📍 Index reentry check", { candidate, assignment, proctoringReady, proctoringDone });
+
+      if (candidate && assignment && flowStarted && proctoringReady === "true" && proctoringDone === "1") {
+        // Do nothing, proctoring complete
+        console.log("✅ Proctoring complete, staying on index.");
+      } else if (candidate && assignment && flowStarted) {
+        verifyAndProceed(candidate, assignment);  // will push to /proctoring-session or /proctoring-setup
+      }
+    }, []);
+
+
   const handleStart = async () => {
     if (!selectedTest) return alert("Select a test first");
     if (!agreedToRules) return alert("Please agree to the exam rules first.");
+
+    const ready = sessionStorage.getItem("proctoring_ready");
+    if (ready !== "true") {
+      alert("Proctoring not yet completed. Please finish setup.");
+      return;
+    }
 
     const now = new Date();
     const validFrom = new Date(selectedTest.valid_from);
@@ -52,7 +138,12 @@ export default function StartSessionPage() {
     if (now > validTo) return alert("Test window is closed.");
 
     sessionStorage.removeItem("violationCount");
-    await document.documentElement.requestFullscreen();
+    try {
+      await document.documentElement.requestFullscreen();
+    } catch (err) {
+      console.warn("Fullscreen failed", err);
+    }
+
 
     const res = await fetch(`${API_BASE_URL}/api/start-session/`, {
       method: "POST",
@@ -66,7 +157,6 @@ export default function StartSessionPage() {
       return;
     }
 
-    // ✅ Set session in localStorage
     localStorage.setItem("sessionData", JSON.stringify({
       candidate_id: candidateId,
       test_id: selectedTest.test_id,
@@ -80,12 +170,10 @@ export default function StartSessionPage() {
     localStorage.removeItem("testCompleted");
     sessionStorage.removeItem("violationCount");
 
-    // ✅ ⚠️ Now request fullscreen (must not be inside async chain)
     document.documentElement.requestFullscreen().catch((err) => {
       console.warn("Fullscreen failed", err);
     });
 
-    // ✅ Navigate only after fullscreen attempt
     router.push("/test/section");
   };
 
