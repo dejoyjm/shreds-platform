@@ -10,6 +10,7 @@ from datetime import timedelta
 from random import shuffle
 import json
 from test_engine.utils.scoring import calculate_score_for_candidate, serialize_score_report, generate_score_report_excel
+from proctoring.models import ProctoringHeartbeat
 
 
 
@@ -221,7 +222,21 @@ class SaveBulkResponsesAPIView(APIView):
                 if set(all_sections) == set(completed_sections):
                     print("🎉 All sections completed. Test is now complete.")
                     session.completed = True
-                    session.save()
+                    session.test_completed_at = timezone.now()
+                    print("📌 DEBUG — session.test_completed_at just set to:", session.test_completed_at)
+                    session.save(update_fields=["completed", "test_completed_at"])
+
+                    try:
+                        heartbeat, _ = ProctoringHeartbeat.objects.get_or_create(assignment=session.assignment)
+                        heartbeat.mark_completed()
+                        heartbeat.mark_completed()
+
+                        print("📌 DEBUG — heartbeat will receive:", session.test_completed_at)
+                        heartbeat.test_completed_at = session.test_completed_at
+                        heartbeat.save(update_fields=["candidate_status", "test_completed_at"])
+                    except Exception as e:
+                        print("❌ Failed to update heartbeat from SaveBulkResponsesAPIView:", e)
+
                     test = Test.objects.get(id=test_id)
                     candidate = Candidate.objects.get(id=candidate_id)
                     try:
@@ -266,7 +281,8 @@ class SubmitTestAPIView(APIView):
         )
 
         session.completed = True
-        session.save()
+        session.test_completed_at = timezone.now()
+        session.save(update_fields=["completed", "test_completed_at"])
 
         test = Test.objects.get(id=test_id)
         candidate = Candidate.objects.get(id=candidate_id)
@@ -277,6 +293,16 @@ class SubmitTestAPIView(APIView):
             generate_score_report_excel(candidate, test, attempt_number, report_data)
         except Exception as e:
             print("⚠️ Failed to generate score report:", e)
+
+        try:
+            heartbeat, _ = ProctoringHeartbeat.objects.get_or_create(assignment=session.assignment)
+            heartbeat.mark_completed()
+            heartbeat.test_completed_at = session.test_completed_at
+            heartbeat.save(update_fields=["candidate_status", "test_completed_at"])
+            print("✅ SubmitTestAPIView called with:", candidate_id, test_id, attempt_number)
+
+        except Exception as e:
+            print("❌ Failed to update heartbeat:", e)
 
         return Response({"status": "submitted"}, status=200)
 
@@ -298,7 +324,8 @@ class AutoSubmitAPIView(APIView):
         )
 
         session.completed = True
-        session.save()
+        session.test_completed_at = timezone.now()
+        session.save(update_fields=["completed", "test_completed_at"])
 
         SectionStatus.objects.filter(
             session=session,
@@ -314,6 +341,16 @@ class AutoSubmitAPIView(APIView):
             generate_score_report_excel(candidate, test, attempt_number, report_data)
         except Exception as e:
             print("⚠️ Failed to generate score report:", e)
+
+        try:
+            heartbeat, _ = ProctoringHeartbeat.objects.get_or_create(assignment=session.assignment)
+            heartbeat.mark_completed()
+            heartbeat.test_completed_at = session.test_completed_at
+            heartbeat.save(update_fields=["candidate_status", "test_completed_at"])
+            print("✅ AutoSubmitAPIView updated heartbeat for:", candidate_id, test_id, attempt_number)
+
+        except Exception as e:
+            print("❌ Failed to update heartbeat in AutoSubmit:", e)
 
         return Response({"status": "auto-submitted"}, status=200)
 
@@ -334,6 +371,16 @@ class StartSessionAPIView(APIView):
             candidate_id=candidate_id,
             test_id=test_id
         )
+
+        # Create session
+        attempt_number = CandidateTestSession.objects.filter(assignment=assignment).count() + 1
+        session = CandidateTestSession.objects.create(
+            assignment=assignment,
+            attempt_number=attempt_number,
+            started_at=timezone.now()
+        )
+
+        print("🔍 Created session:", session.id, session.assignment_id)
 
         # Check validity window
         now = timezone.now()
@@ -368,6 +415,9 @@ class StartSessionAPIView(APIView):
             attempt_number=attempt_number,
             started_at=now,
         )
+        # Update ProctoringHeartbeat to reflect test start
+        heartbeat, _ = ProctoringHeartbeat.objects.get_or_create(assignment=assignment)
+        heartbeat.mark_started()
 
         # Set first section
         first_section = TestSectionConfig.objects.filter(test=assignment.test).order_by("id").first()
@@ -492,7 +542,16 @@ class ResumeSectionAPIView(APIView):
             else:
                 print("✅ No more sections remaining. Marking session as completed.")
                 session.completed = True
-                session.save()
+                session.test_completed_at = timezone.now()
+                session.save(update_fields=["completed", "test_completed_at"])
+                try:
+                    heartbeat, _ = ProctoringHeartbeat.objects.get_or_create(assignment=session.assignment)
+                    heartbeat.mark_completed()
+                    heartbeat.test_completed_at = session.test_completed_at
+                    heartbeat.save(update_fields=["candidate_status", "test_completed_at"])
+                    print("✅ Heartbeat updated from ResumeSectionAPIView")
+                except Exception as e:
+                    print("❌ Failed to update heartbeat from ResumeSectionAPIView:", e)
                 try:
                     test = session.assignment.test
                     candidate = session.assignment.candidate
@@ -566,12 +625,21 @@ class ResumeSessionAPIView(APIView):
         ).filter(
             assignment__candidate_id=candidate_id,
             assignment__test_id=test_id,
-            completed=False
         ).order_by("-attempt_number").first()
 
         if not session:
-            return Response({"error": "No active session found"}, status=404)
+            return Response({"error": "No session found"}, status=404)
 
+        session.refresh_from_db()
+
+        if session.completed:
+            return Response({
+                "status": "completed",
+                "test_completed_at": session.test_completed_at,
+                "attempt_number": session.attempt_number
+            }, status=200)
+
+        # Continue with normal response if session is active
         return Response({
             "session_id": session.id,
             "candidate": str(session.assignment.candidate.id),

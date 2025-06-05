@@ -200,6 +200,8 @@ class CandidateTestSession(models.Model):
     completed = models.BooleanField(default=False)
     current_section = models.ForeignKey("TestSectionConfig", on_delete=models.SET_NULL, null=True, blank=True)
     section_started_at = models.DateTimeField(null=True, blank=True)
+    screen_ok = models.BooleanField(default=True)  # Add this if missing
+    test_completed_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return f"Session {self.assignment} - Attempt {self.attempt_number}"

@@ -65,7 +65,7 @@ export default function StartSessionPage() {
     }
   };
 
-  const handleVerify = async () => {
+    const handleVerify = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/verify-secrets/`, {
         method: "POST",
@@ -98,7 +98,11 @@ export default function StartSessionPage() {
       setStatusMsg("No assignments available.");
     } catch (err) {
       console.error("Verify failed", err);
-      setStatusMsg("Error verifying candidate.");
+      if (err instanceof TypeError && err.message.includes("Failed to fetch")) {
+        setStatusMsg("❌ Could not connect to server. Please check your internet or try again.");
+      } else {
+        setStatusMsg("Error verifying candidate.");
+      }
     }
   };
 

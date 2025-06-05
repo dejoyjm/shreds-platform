@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { logViolation } from "@/utils/api";
 
 /**
  * Checks webcam, screen, and fullscreen permissions,
@@ -10,6 +11,7 @@ import { useEffect, useRef } from "react";
  */
 export default function PermissionChecker({ onUpdate, antiCheatLevel = "low" }) {
   const hasCheckedRef = useRef(false);
+  const hasEnteredFullscreenRef = useRef(false);
 
   useEffect(() => {
     if (hasCheckedRef.current) return;
@@ -54,6 +56,23 @@ export default function PermissionChecker({ onUpdate, antiCheatLevel = "low" }) 
 
       fullscreen = document.fullscreenElement !== null;
 
+      // 🧠 Track if fullscreen was ever entered
+      if (fullscreen) {
+        hasEnteredFullscreenRef.current = true;
+      }
+
+      // ✅ Log violations conditionally
+      if (!camera) {
+        logViolation("camera_lost", { reason: "Camera stream missing" }, 2);
+      }
+      if (!screen) {
+        logViolation("screen_lost", { reason: "Screen share stopped" }, 3);
+      }
+      if (!fullscreen && hasEnteredFullscreenRef.current) {
+        logViolation("fullscreen_exit", { reason: "Fullscreen exited" }, 1);
+      }
+
+      // ✅ Send status to parent
       const result = {
         camera,
         screen,
@@ -62,11 +81,7 @@ export default function PermissionChecker({ onUpdate, antiCheatLevel = "low" }) 
         screenStream,
       };
 
-      console.log("✅ PermissionChecker: streams prepared", {
-        cameraStream,
-        screenStream,
-      });
-
+      console.log("✅ PermissionChecker: streams prepared", { cameraStream, screenStream });
       onUpdate(result);
     };
 

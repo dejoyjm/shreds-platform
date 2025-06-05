@@ -1,17 +1,16 @@
 from rest_framework.decorators import api_view
+
 from rest_framework.response import Response
 from rest_framework import status
 from proctoring.models import (
     TestProctoringConfig,
     IDDocumentType,
     CandidateConsent,
-    ProctoringPhoto
+    ProctoringPhoto, ProctoringViolation, ProctoringSession, ProctoringHeartbeat
 )
-from test_engine.models import Candidate, TestAssignment
+from test_engine.models import Candidate, TestAssignment, CandidateTestSession, TestAssignment, SectionStatus
 
 from django.utils import timezone
-from proctoring.models import ProctoringSession
-
 
 
 @api_view(["GET"])
@@ -94,8 +93,6 @@ def upload_photo(request):
     if not all([candidate_id, assignment_id, photo_type, image]):
         return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # ✅ Validate photo_type from model choices
-    from proctoring.models import ProctoringPhoto  # Optional if already at top
     VALID_PHOTO_TYPES = [choice[0] for choice in ProctoringPhoto._meta.get_field("photo_type").choices]
     if photo_type not in VALID_PHOTO_TYPES:
         return Response({"error": f"Invalid photo_type. Must be one of: {', '.join(VALID_PHOTO_TYPES)}"},
@@ -116,7 +113,7 @@ def upload_photo(request):
         except IDDocumentType.DoesNotExist:
             return Response({"error": "Invalid ID document type"}, status=status.HTTP_404_NOT_FOUND)
 
-    ProctoringPhoto.objects.create(
+    photo_obj = ProctoringPhoto.objects.create(
         candidate=candidate,
         test_assignment=assignment,
         photo_type=photo_type,
@@ -125,6 +122,15 @@ def upload_photo(request):
         context=context,
         quality_self_declared=True
     )
+
+    # 🟢 Update heartbeat
+    heartbeat, _ = ProctoringHeartbeat.objects.get_or_create(assignment=assignment)
+    photo_url = photo_obj.image.url
+
+    if photo_type == "face":
+        heartbeat.update_face_capture(photo_url, ok=True)
+    elif photo_type == "screen":
+        heartbeat.update_screen_capture(photo_url, ok=True)
 
     return Response({"status": "photo_uploaded"})
 
@@ -278,3 +284,86 @@ def check_proctoring_status(request):
         "started_at": session.started_at,
         "ended_at": session.ended_at
     })
+
+@api_view(["POST"])
+def log_violation(request):
+    try:
+        assignment_id = request.data.get("assignment_id")
+        violation_type = request.data.get("type")
+        metadata = request.data.get("metadata", {})
+        severity = int(request.data.get("severity", 1))
+
+        if not all([assignment_id, violation_type]):
+            return Response({"error": "Missing assignment_id or violation type"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create violation record
+        violation = ProctoringViolation.objects.create(
+            assignment_id=assignment_id,
+            violation_type=violation_type,
+            severity=severity,
+            metadata=metadata
+        )
+
+        # Update heartbeat
+        heartbeat, _ = ProctoringHeartbeat.objects.get_or_create(assignment_id=assignment_id)
+        heartbeat.last_seen = violation.timestamp  # Optional: or use timezone.now()
+
+        # Handle specific violation effects
+        if violation_type == "fullscreen_exit":
+            heartbeat.mark_fullscreen_exit()
+        else:
+            heartbeat.increment_severity(severity)
+
+        return Response({"status": "logged"}, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["POST"])
+def update_heartbeat(request):
+    """
+    Accepts JSON: {
+        "assignment_id": int,
+        "session_token": str,
+        "screen_ok": bool,
+        "fullscreen_ok": bool (optional),
+        "reason": str (optional)
+    }
+    """
+    assignment_id = request.data.get("assignment_id")
+    session_token = request.data.get("session_token")
+    screen_ok = request.data.get("screen_ok")
+    fullscreen_ok = request.data.get("fullscreen_ok")
+    reason = request.data.get("reason", "heartbeat update")
+
+    if not assignment_id or screen_ok is None:
+        return Response({"error": "Missing required fields"}, status=400)
+
+    try:
+        session = CandidateTestSession.objects.get(
+            assignment_id=assignment_id,
+            session_token=session_token,
+            completed=False,
+        )
+    except CandidateTestSession.DoesNotExist:
+        return Response({"error": "Active session not found"}, status=404)
+
+    # Save heartbeat update on session
+    session.last_seen = timezone.now()
+    session.screen_ok = bool(screen_ok)
+    session.save(update_fields=["last_seen", "screen_ok"])
+
+    # Update fullscreen status on latest heartbeat or create new one
+    try:
+        heartbeat = ProctoringHeartbeat.objects.filter(
+            assignment=session.assignment,
+            attempt_number=session.attempt_number
+        ).latest("created_at")
+    except ProctoringHeartbeat.DoesNotExist:
+        heartbeat = ProctoringHeartbeat.objects.create(
+            assignment=session.assignment,
+            attempt_number=session.attempt_number
+        )
+
+
+    return Response({"status": "heartbeat updated", "screen_ok": screen_ok, "fullscreen_ok": fullscreen_ok})
