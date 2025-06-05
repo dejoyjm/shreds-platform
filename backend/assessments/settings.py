@@ -160,13 +160,14 @@ REST_FRAMEWORK = {
 
 
 # Enable frontend-backend link
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "https://shreds-platform.vercel.app",
-    "https://shreds-platform-5f0o1cbrr-dejoy-mathais-projects.vercel.app",
-    "https://temp-test-platform.vercel.app",
-    "https://temp-test-platform.shredsindia.org",
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https:\/\/shreds-platform-[\w\-]+-dejoy-mathais-projects\.vercel\.app$",
+    r"^https:\/\/shreds-platform\.vercel\.app$",
+    r"^http:\/\/localhost:3000$",
+    r"^https:\/\/temp-test-platform\.vercel\.app$",
+    r"^https:\/\/temp-test-platform\.shredsindia\.org$",
 ]
+
 
 #Ensure MEDIA_URL is available in dev
 MEDIA_URL = '/media/'
