@@ -21,26 +21,33 @@ export default function ProctoringSetup() {
   const canvasRef = useRef(null);
   const [status, setStatus] = useState("");
 
-  const candidate_id = sessionStorage.getItem("candidate_id");
-  const assignment_id = sessionStorage.getItem("assignment_id");
+  let candidate_id = null;
+  let assignment_id = null;
 
-    useEffect(() => {
-      const fetchConfig = async () => {
-        const res = await fetch(`${API_BASE_URL}/api/proctoring/get-consent/?assignment_id=${assignment_id}&candidate_id=${candidate_id}`);
-        const data = await res.json();
+  if (typeof window !== "undefined") {
+    candidate_id = sessionStorage.getItem("candidate_id");
+    assignment_id = sessionStorage.getItem("assignment_id");
+  }
 
-        if (!data?.enforce_proctoring) {
-          console.warn("⚠️ Proctoring not required. Skipping setup.");
+  useEffect(() => {
+    const fetchConfig = async () => {
+      const res = await fetch(`${API_BASE_URL}/api/proctoring/get-consent/?assignment_id=${assignment_id}&candidate_id=${candidate_id}`);
+      const data = await res.json();
+
+      if (!data?.enforce_proctoring) {
+        console.warn("⚠️ Proctoring not required. Skipping setup.");
+        if (typeof window !== "undefined") {
           sessionStorage.setItem("proctoring_ready", "true");
           sessionStorage.setItem("proctoring_session_done", "1");
-          router.push("/test/section");
-          return;
         }
+        router.push("/test/section");
+        return;
+      }
 
-        setConfig(data);
-      };
-      fetchConfig();
-    }, []);
+      setConfig(data);
+    };
+    fetchConfig();
+  }, []);
 
   if (!config || !config.enforce_proctoring) return <p>Skipping proctoring...</p>;
 

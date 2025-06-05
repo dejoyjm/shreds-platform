@@ -6,16 +6,27 @@ import { useAntiCheat } from "@/utils/useAntiCheat";
 import PeriodicCapture from "@/components/PeriodicCapture";
 import { useProctoring } from "@/components/ProctoringContext";
 
-
-
 export default function SectionPage() {
   const router = useRouter();
-const { screenStream, cameraStream, baseFrequency, violationBoostFactor } = useProctoring();
+  const { screenStream, cameraStream, baseFrequency, violationBoostFactor } = useProctoring();
 
   useAntiCheat((reason) => {
     console.warn("⚠️ Anti-cheat triggered:", reason);
     toast.error(`Anti-cheat: ${reason}`);
   });
+
+  const safeSessionStorageGet = (key) => {
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      return window.sessionStorage.getItem(key);
+    }
+    return null;
+  };
+
+  const safeSessionStorageSet = (key, value) => {
+    if (typeof window !== "undefined" && window.sessionStorage) {
+      window.sessionStorage.setItem(key, value);
+    }
+  };
 
   useEffect(() => {
     const handleAutoSubmit = () => {
@@ -46,7 +57,7 @@ const { screenStream, cameraStream, baseFrequency, violationBoostFactor } = useP
 
   let session = null;
   if (typeof window !== "undefined") {
-    const raw = localStorage.getItem("sessionData") || sessionStorage.getItem("sessionData");
+    const raw = localStorage.getItem("sessionData") || safeSessionStorageGet("sessionData");
     try {
       session = JSON.parse(raw);
     } catch (err) {
@@ -55,11 +66,11 @@ const { screenStream, cameraStream, baseFrequency, violationBoostFactor } = useP
   }
 
   try {
-    const sessionToken = sessionStorage.getItem("proctoring_session_token");
-    const assignmentIdFromSession = sessionStorage.getItem("assignment_id");
-        if (assignmentIdFromSession && !session.assignment_id) {
-          session.assignment_id = parseInt(assignmentIdFromSession); // Ensure numeric
-        }
+    const sessionToken = safeSessionStorageGet("proctoring_session_token");
+    const assignmentIdFromSession = safeSessionStorageGet("assignment_id");
+    if (assignmentIdFromSession && !session.assignment_id) {
+      session.assignment_id = parseInt(assignmentIdFromSession);
+    }
 
     if (session && sessionToken && !session.session_token) {
       session.session_token = sessionToken;
@@ -319,18 +330,18 @@ const { screenStream, cameraStream, baseFrequency, violationBoostFactor } = useP
     localStorage.setItem("currentQuestionIndex", currentQuestionIndex.toString());
   }, [currentQuestionIndex]);
 
-  const sessionToken = sessionStorage.getItem("proctoring_session_token");
-  const assignmentIdFromSession = sessionStorage.getItem("assignment_id");
-        if (assignmentIdFromSession && !session.assignment_id) {
-          session.assignment_id = parseInt(assignmentIdFromSession); // Ensure numeric
-        }
+  const sessionToken = safeSessionStorageGet("proctoring_session_token");
+  const assignmentIdFromSession = safeSessionStorageGet("assignment_id");
+  if (assignmentIdFromSession && !session.assignment_id) {
+    session.assignment_id = parseInt(assignmentIdFromSession);
+  }
 
-    const proctoringRequired = sessionStorage.getItem("proctoring_required") === "true";
-    const proctoringDone = sessionStorage.getItem("proctoring_session_done") === "1";
+  const proctoringRequired = safeSessionStorageGet("proctoring_required") === "true";
+  const proctoringDone = safeSessionStorageGet("proctoring_session_done") === "1";
 
-    if (proctoringRequired && !proctoringDone) {
-      return <div>⚠️ Proctoring session not active. Please restart your test.</div>;
-    }
+  if (proctoringRequired && !proctoringDone) {
+    return <div>⚠️ Proctoring session not active. Please restart your test.</div>;
+  }
 
 
   if (loading) return <div>Loading section...</div>;

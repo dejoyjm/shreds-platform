@@ -23,12 +23,18 @@ export default function ProctoringSession() {
     setSessionToken: setCtxSessionToken,
     setBaseFrequency,
     setViolationBoostFactor,
-  } = useProctoring(); // ✅ ALL CONTEXT HOOKS IN ONE PLACE
+  } = useProctoring();
 
-  const candidate_id = sessionStorage.getItem("candidate_id");
-  const assignment_id = sessionStorage.getItem("assignment_id");
+  let candidate_id = null;
+  let assignment_id = null;
+
+  if (typeof window !== "undefined") {
+    candidate_id = sessionStorage.getItem("candidate_id");
+    assignment_id = sessionStorage.getItem("assignment_id");
+  }
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     const token = sessionStorage.getItem("proctoring_session_token");
     console.log("🔎 Initial sessionStorage:", { candidate_id, assignment_id, token });
 
@@ -72,8 +78,10 @@ export default function ProctoringSession() {
         console.log("📡 Proctoring config received", data);
 
         if (!data?.enforce_proctoring) {
-          sessionStorage.setItem("proctoring_ready", "true");
-          sessionStorage.setItem("proctoring_session_done", "1");
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("proctoring_ready", "true");
+            sessionStorage.setItem("proctoring_session_done", "1");
+          }
           router.push("/test");
           return;
         }
@@ -153,6 +161,7 @@ export default function ProctoringSession() {
   }, [sessionToken]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     if (flags.camera && flags.screen && sessionToken && !proceeding) {
       if (sessionStorage.getItem("redirected_to_test")) return;
       sessionStorage.setItem("redirected_to_test", "1");
