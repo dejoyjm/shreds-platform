@@ -15,7 +15,10 @@ export default function ProctoringSession() {
   const [proceeding, setProceeding] = useState(false);
   const [flags, setFlags] = useState({ camera: false, screen: false, fullscreen: false });
   const [sessionReady, setSessionReady] = useState(false);
+  const [startCheck, setStartCheck] = useState(false);
   const hasHandledRef = useRef(false);
+  const permissionRef = useRef(null); // ✅ THIS FIXES YOUR ERROR
+
 
   const {
     setCameraStream,
@@ -36,8 +39,6 @@ export default function ProctoringSession() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const token = sessionStorage.getItem("proctoring_session_token");
-    console.log("🔎 Initial sessionStorage:", { candidate_id, assignment_id, token });
-
     if (token) {
       setSessionToken(token);
       setCtxSessionToken(token);
@@ -76,7 +77,6 @@ export default function ProctoringSession() {
         const res = await fetch(`${API_BASE_URL}/api/proctoring/check-ready/?assignment_id=${assignment_id}&candidate_id=${candidate_id}`);
         const data = await res.json();
         console.log("📡 Proctoring config received", data);
-
         if (!data?.enforce_proctoring) {
           if (typeof window !== "undefined") {
             sessionStorage.setItem("proctoring_ready", "true");
@@ -85,19 +85,16 @@ export default function ProctoringSession() {
           router.push("/test");
           return;
         }
-
         setProctoringConfig(data.requirements || {});
         const freq = Number(data?.requirements?.periodic_screen_capture_sec || 60);
         const boost = Number(data?.requirements?.violation_boost_factor || 1);
         setBaseFrequency(freq);
         setViolationBoostFactor(boost);
         console.log("🧠 Context set from proctoring-session:", { freq, boost });
-
       } catch (err) {
         console.error("❌ Failed to fetch proctoring config", err);
       }
     };
-
     fetchConfig();
   }, []);
 
@@ -181,28 +178,32 @@ export default function ProctoringSession() {
       <p className="text-sm text-gray-600">{status}</p>
       <p style={{ fontSize: "0.75rem", color: "#666" }}>Session Token: {sessionToken}</p>
 
-      {sessionReady && proctoringConfig && sessionToken && (
-        <PermissionChecker onUpdate={handlePermissionCheck} />
-      )}
-        {screenStream &&
-          proctoringConfig?.periodic_screen_capture_sec &&
-          proctoringConfig?.violation_boost_factor && (
-            <>
-              {console.log("🧠 Passed to PeriodicCapture:", {
-                baseFrequency: Number(proctoringConfig.periodic_screen_capture_sec),
-                violationBoostFactor: Number(proctoringConfig.violation_boost_factor),
-              })}
+    {sessionReady && proctoringConfig && sessionToken && (
+      <button
+        onClick={() => {
+          if (permissionRef.current) {
+            permissionRef.current.checkPermissions();
+          }
+        }}
+        style={{ marginTop: "1rem", padding: "0.75rem 1.5rem", backgroundColor: "#10b981", color: "white", border: "none", borderRadius: "6px" }}
+      >
+        ✅ Start Proctoring Checks
+      </button>
+    )}
 
-              <PeriodicCapture
-                sessionToken={sessionToken}
-                candidateId={candidate_id}
-                assignmentId={assignment_id}
-                screenStream={screenStream}
-              />
-            </>
+    <PermissionChecker ref={permissionRef} onUpdate={handlePermissionCheck} />
+
+
+      {screenStream &&
+        proctoringConfig?.periodic_screen_capture_sec &&
+        proctoringConfig?.violation_boost_factor && (
+          <PeriodicCapture
+            sessionToken={sessionToken}
+            candidateId={candidate_id}
+            assignmentId={assignment_id}
+            screenStream={screenStream}
+          />
         )}
-
-
     </div>
   );
 }
