@@ -272,7 +272,7 @@ export default function SectionPage() {
         if (!res.ok) throw new Error(`Resume failed: ${res.status}`);
         return res.json();
       })
-      .then((data) => {
+    .then((data) => {
         if (data.status === "completed") {
           toast.success("✅ Section saved and test completed. You may now close this window.");
           localStorage.removeItem("sessionData");
@@ -283,17 +283,25 @@ export default function SectionPage() {
           return;
         }
 
+        console.log("📦 resume-section returned:", {
+          section_id: data.section_id,
+          time_left_seconds: data.time_left_seconds,
+        });
+
         localStorage.setItem(`questions_${data.section_id}`, JSON.stringify(data.questions || []));
 
         const patchedSession = {
           ...session,
           assignment_id: data.assignment_id ?? session.assignment_id
         };
-        localStorage.setItem("sessionData", JSON.stringify(patchedSession));
+      localStorage.setItem("sessionData", JSON.stringify(patchedSession));
 
-        setSectionData({ ...data, questions: data.questions || [] });
-        setTimeLeft(data.time_left_seconds ?? 0);
-        console.log("📦 Received time_left_seconds:", data.time_left_seconds);
+      const updated = { ...data, questions: data.questions || [] };
+      setSectionData(updated);
+      sectionDataRef.current = updated;
+
+      console.log("📥 setTimeLeft() called with:", data.time_left_seconds);
+      setTimeLeft(data.time_left_seconds ?? 0);  // ✅ Moved AFTER sectionDataRef.current is set
       })
       .catch((err) => {
         console.error("Resume section failed:", err);
@@ -304,6 +312,16 @@ export default function SectionPage() {
   }, [router]);
 
   useEffect(() => {
+    console.log("🕰️ [TIMER useEffect] Entered with:", {
+      timeLeft,
+      autoSubmitted,
+      sectionId: sectionDataRef.current?.section_id,
+    });
+
+    if (timeLeft === null) console.warn("🚫 TIMER skipped: timeLeft is null");
+    if (autoSubmitted) console.warn("🚫 TIMER skipped: already autoSubmitted");
+    if (!sectionDataRef.current?.section_id) console.warn("🚫 TIMER skipped: section_id missing");
+
     if (timeLeft === null || autoSubmitted || !sectionDataRef.current?.section_id) return;
 
     if (timeLeft <= 0) {
@@ -315,16 +333,22 @@ export default function SectionPage() {
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
+        const next = prev - 1;
+        console.log(`⏳ TICK: timeLeft ${prev} → ${next}`);
         if (prev <= 1) {
           clearInterval(timer);
           return 0;
         }
-        return prev - 1;
+        return next;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [timeLeft, autoSubmitted]);
+    return () => {
+      console.log("🧹 Clearing timer on unmount");
+      clearInterval(timer);
+    };
+  }, [timeLeft, autoSubmitted, sectionData?.section_id]);
+
 
   useEffect(() => {
     localStorage.setItem("currentQuestionIndex", currentQuestionIndex.toString());
