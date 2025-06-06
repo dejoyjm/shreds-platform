@@ -79,3 +79,4 @@ const PermissionChecker = forwardRef(({ onUpdate, antiCheatLevel = "low" }, ref)
 });
 
 export default PermissionChecker;
+PermissionChecker.displayName = "PermissionChecker";
