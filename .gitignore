@@ -27,7 +27,15 @@ frontend/.next/
 # Don't ignore staticfiles
 !staticfiles/
 
-#Media
-backend/media/
+#Safe
 frontend/pages/test/safe/
 
+
+# Ignore all media files
+backend/media/**
+
+# EXCEPT folder structure
+!backend/media/
+!backend/media/.keep
+!backend/media/proctoring_photos/
+!backend/media/proctoring_photos/.keep
