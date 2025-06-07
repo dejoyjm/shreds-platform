@@ -416,7 +416,16 @@ class StartSessionAPIView(APIView):
             started_at=now,
         )
         # Update ProctoringHeartbeat to reflect test start
-        heartbeat, _ = ProctoringHeartbeat.objects.get_or_create(assignment=assignment)
+        heartbeat, _ = ProctoringHeartbeat.objects.get_or_create(
+            assignment=assignment,
+            defaults={
+                "total_camera_failures": 0,
+                "total_screen_failures": 0,
+                "total_fullscreen_failures": 0,
+                # Add other NOT NULL fields here
+            }
+        )
+
         heartbeat.mark_started()
 
         # Set first section

@@ -1,0 +1,53 @@
+0000000000000000000000000000000000000000 5f3aedee1129ef3897273b289f521db79980476c Dejoy Mathai <Dejoy.Mathai@ril.com> 1743535020 +0530	initial pull
+5f3aedee1129ef3897273b289f521db79980476c 90b1958ff9810a4a47c71466bf8e5209822729d2 Dejoy Mathai <Dejoy.Mathai@ril.com> 1743539722 +0530	commit: Pushing frontend for Vercel deployment
+90b1958ff9810a4a47c71466bf8e5209822729d2 0d14fc4213d0f7c6b72f089c013c3b5819f4d62d Dejoy Mathai <Dejoy.Mathai@ril.com> 1743540432 +0530	commit: Redirect root path to /login
+0d14fc4213d0f7c6b72f089c013c3b5819f4d62d 33776f3821b0bdd841445c1d8823158498b743f2 Dejoy Mathai <Dejoy.Mathai@ril.com> 1743541414 +0530	commit: Add render.yaml and requirements for deployment
+33776f3821b0bdd841445c1d8823158498b743f2 39b2dc6434a5ac749212898cd958057c890229f2 Dejoy Mathai <Dejoy.Mathai@ril.com> 1743542389 +0530	commit: Add simplejwt to requirements
+39b2dc6434a5ac749212898cd958057c890229f2 0b76e8be7edf4bf3772ffd9d6f36880bf8749a37 Dejoy Mathai <Dejoy.Mathai@ril.com> 1743542863 +0530	commit: Add Render domain to ALLOWED_HOSTS
+0b76e8be7edf4bf3772ffd9d6f36880bf8749a37 3d6e4d5a8a154e16dc882f78c6035984f8c5212b Dejoy Mathai <Dejoy.Mathai@ril.com> 1743542940 +0530	commit: Add Render domain to ALLOWED_HOSTS
+3d6e4d5a8a154e16dc882f78c6035984f8c5212b f45601f6c382dac57af405b0e20a45fc9faf4cb5 Dejoy Mathai <Dejoy.Mathai@ril.com> 1743543369 +0530	commit: Fix 500 error: force JSONRenderer only
+f45601f6c382dac57af405b0e20a45fc9faf4cb5 5e999b014a81eb1cd5d696a65187157da3ce000b Dejoy Mathai <Dejoy.Mathai@ril.com> 1743550514 +0530	commit: Ready for cloud deployment
+5e999b014a81eb1cd5d696a65187157da3ce000b d43652b808c85cbc058b6b645e2d9e47391b5743 Dejoy Mathai <Dejoy.Mathai@ril.com> 1743551983 +0530	commit: Add Vercel domains to CORS_ALLOWED_ORIGINS
+d43652b808c85cbc058b6b645e2d9e47391b5743 e24de0f69a1b9a02fab7b7a294db3d1a5c39a8c7 Dejoy Mathai <Dejoy.Mathai@ril.com> 1743579419 +0530	commit: Renamed core → assessments, cleaned up ignored files
+e24de0f69a1b9a02fab7b7a294db3d1a5c39a8c7 3e08c340ec25c7f01bb52acfb11b181cc7830cd4 Dejoy Mathai <Dejoy.Mathai@ril.com> 1743604518 +0530	commit: Tailwind setup and test page working
+3e08c340ec25c7f01bb52acfb11b181cc7830cd4 0b21a7545b6674f91266d47589dff86c9d4d8f79 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747050649 +0530	commit: Finalize render setup with settings and static files
+0b21a7545b6674f91266d47589dff86c9d4d8f79 4f3a347dfbf41cb4e1ac990ada37fc5389b5c647 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747050977 +0530	commit: Deploy: move render.yaml to root and clean staging
+4f3a347dfbf41cb4e1ac990ada37fc5389b5c647 b8e4b1e2d5e8908568f7ddb90298cf9eeb1bec82 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747051549 +0530	commit: Fix: move migrations to preDeployCommand
+b8e4b1e2d5e8908568f7ddb90298cf9eeb1bec82 25bc012a5494c764e7cf377a91240ded843bf549 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747052463 +0530	commit: Fix: staticfiles config for production
+25bc012a5494c764e7cf377a91240ded843bf549 ffcfc86a6f4e3155eba3cf033498a8c0fed8d158 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747053543 +0530	commit: Add: dj-database-url support and STATICFILES_STORAGE fix
+ffcfc86a6f4e3155eba3cf033498a8c0fed8d158 95eb318a2e0aa0a4e5ff46fd4d5ac7c6665c2769 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747053752 +0530	commit: Add: dj-database-url support and STATICFILES_STORAGE fix
+95eb318a2e0aa0a4e5ff46fd4d5ac7c6665c2769 5a0c1c44fc6e1bc491002ff73ba098a17c341969 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747054122 +0530	commit: Fix: define BASE_DIR before using in database config
+5a0c1c44fc6e1bc491002ff73ba098a17c341969 a9b0b7d252f007d1d11714aa6875f94c127259ac Dejoy Mathai <Dejoy.Mathai@ril.com> 1747055293 +0530	commit: Fix: final static deployment structure for Render
+a9b0b7d252f007d1d11714aa6875f94c127259ac 20c11fb1976598daa72701514e52184bbba9ac83 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747055825 +0530	commit: Fix: move collectstatic to preDeployCommand for Render
+20c11fb1976598daa72701514e52184bbba9ac83 4772ca59ccf369f65f214a1756f79b4593b05f74 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747056901 +0530	commit: Static files collected locally for production
+4772ca59ccf369f65f214a1756f79b4593b05f74 ccb6d4bad40733bc041435af71edaace39cd6f63 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747057822 +0530	commit: Fix: correct STATIC_ROOT path for Render deployment
+ccb6d4bad40733bc041435af71edaace39cd6f63 b7abee855ae3877157b46b3b9768b02fb80642eb Dejoy Mathai <Dejoy.Mathai@ril.com> 1747058612 +0530	commit: Debug = false
+b7abee855ae3877157b46b3b9768b02fb80642eb fefcc61baf66dec70a7da27b39540f4f189eb762 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747120123 +0530	commit: Debug = false
+fefcc61baf66dec70a7da27b39540f4f189eb762 ad1be30d14c326fdb662cd9c631b86ef51b9ffa1 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747124816 +0530	commit: Fix: Add whitenoise to requirements
+ad1be30d14c326fdb662cd9c631b86ef51b9ffa1 90ace7a9c8f9012f2d9280ae1c224380d7dc1516 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747127110 +0530	commit: Fix: escape apostrophe to resolve Next.js lint error
+90ace7a9c8f9012f2d9280ae1c224380d7dc1516 5048e2596665dd75e09419f6ccb1c9d9e19cc975 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747127824 +0530	commit: Frontend - &apos;
+5048e2596665dd75e09419f6ccb1c9d9e19cc975 c8b8cd5f8488d6bdb2bb7157e5090130195b75de Dejoy Mathai <Dejoy.Mathai@ril.com> 1747643284 +0530	commit: Fix: API base URL and path alias config for Vercel deployment
+c8b8cd5f8488d6bdb2bb7157e5090130195b75de 415a84f7e09f5e086cd5e870787c7280033f8f93 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747645089 +0530	commit: Frontend - Alert changed to Toast
+415a84f7e09f5e086cd5e870787c7280033f8f93 8fa1f269fd9682255d6ae32d5e1234ed68545faf Dejoy Mathai <Dejoy.Mathai@ril.com> 1747645266 +0530	commit: Frontend - Alert changed to Toast
+8fa1f269fd9682255d6ae32d5e1234ed68545faf 83809ad920d9ccb45e61ce0f4194f2b0556a7392 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747664573 +0530	commit: MVP for testing
+83809ad920d9ccb45e61ce0f4194f2b0556a7392 83809ad920d9ccb45e61ce0f4194f2b0556a7392 Dejoy Mathai <Dejoy.Mathai@ril.com> 1747735922 +0530	checkout: moving from main to proctoring-core
+83809ad920d9ccb45e61ce0f4194f2b0556a7392 83809ad920d9ccb45e61ce0f4194f2b0556a7392 Dejoy Mathai <Dejoy.Mathai@ril.com> 1749021236 +0530	reset: moving to HEAD
+83809ad920d9ccb45e61ce0f4194f2b0556a7392 138007b6ca64577da14c9d6bb7abe629383f0016 Dejoy Mathai <Dejoy.Mathai@ril.com> 1749021268 +0530	commit: Stable version before violation logging
+138007b6ca64577da14c9d6bb7abe629383f0016 138007b6ca64577da14c9d6bb7abe629383f0016 Dejoy Mathai <Dejoy.Mathai@ril.com> 1749021425 +0530	checkout: moving from proctoring-core to feature/violation-logging
+138007b6ca64577da14c9d6bb7abe629383f0016 badeec65a1136316a5c8495ef7ead98095c0c05c Dejoy Mathai <Dejoy.Mathai@ril.com> 1749151575 +0530	commit: 🚀 Working version with proctoring v1 stable
+badeec65a1136316a5c8495ef7ead98095c0c05c 83809ad920d9ccb45e61ce0f4194f2b0556a7392 Dejoy Mathai <Dejoy.Mathai@ril.com> 1749151829 +0530	checkout: moving from feature/violation-logging to main
+83809ad920d9ccb45e61ce0f4194f2b0556a7392 83809ad920d9ccb45e61ce0f4194f2b0556a7392 Dejoy Mathai <Dejoy.Mathai@ril.com> 1749152879 +0530	checkout: moving from main to main
+83809ad920d9ccb45e61ce0f4194f2b0556a7392 83809ad920d9ccb45e61ce0f4194f2b0556a7392 Dejoy Mathai <Dejoy.Mathai@ril.com> 1749152890 +0530	reset: moving to origin/main
+83809ad920d9ccb45e61ce0f4194f2b0556a7392 badeec65a1136316a5c8495ef7ead98095c0c05c Dejoy Mathai <Dejoy.Mathai@ril.com> 1749152927 +0530	merge feature/violation-logging: Fast-forward
+badeec65a1136316a5c8495ef7ead98095c0c05c e0ae144e4975f858c1b0325fcd02aa8bcb2cbbad Dejoy Mathai <Dejoy.Mathai@ril.com> 1749153337 +0530	commit: 🧹 Cleanup duplicate copy of proctoring-verify
+e0ae144e4975f858c1b0325fcd02aa8bcb2cbbad 5d10dc4ef979d4995a9cb3a8940b64b7f5cd53fd Dejoy Mathai <Dejoy.Mathai@ril.com> 1749153697 +0530	commit: 🛡️ Ignore safe/ folder from Git tracking and deployment
+5d10dc4ef979d4995a9cb3a8940b64b7f5cd53fd a805fc4716e17c2443d07f25543abae522bb7a8a Dejoy Mathai <Dejoy.Mathai@ril.com> 1749154553 +0530	commit: 🛡️ Safe sessionStorage usage and cleanup for proctoring
+a805fc4716e17c2443d07f25543abae522bb7a8a 65974a86c7512bc13b30408d87d672ef386fe5b5 Dejoy Mathai <Dejoy.Mathai@ril.com> 1749155904 +0530	commit: ✅ Add regex-based CORS origin matching for Vercel previews
+65974a86c7512bc13b30408d87d672ef386fe5b5 67c95c5a861f93b7d0bbb85054f09c0c17e9c26b Dejoy Mathai <Dejoy.Mathai@ril.com> 1749188996 +0530	commit: 🚫 Ignore dev media files, keep folder structure for uploads
+67c95c5a861f93b7d0bbb85054f09c0c17e9c26b 0139753790e322bfad0263401125fbe9625ea9ee Dejoy Mathai <Dejoy.Mathai@ril.com> 1749202616 +0530	commit: ♻️ Refactor: Fix permissionRef error and reduce screen prompts
+0139753790e322bfad0263401125fbe9625ea9ee 31af40776286561b6d851bf263a4cda35ec1ab8f Dejoy Mathai <Dejoy.Mathai@ril.com> 1749202916 +0530	commit: 🐛 Fix ESLint: Add displayName to PermissionChecker
+31af40776286561b6d851bf263a4cda35ec1ab8f af8d36ac92bdd35a2f5dd8e98103d2a1cfd75074 Dejoy Mathai <Dejoy.Mathai@ril.com> 1749210565 +0530	commit: 🐛 Fix: Ensure timer starts only after section_id is set in section.js
+af8d36ac92bdd35a2f5dd8e98103d2a1cfd75074 e7e4a1d46cb5460a19313462b391164588e28bcb Dejoy Mathai <Dejoy.Mathai@ril.com> 1749211460 +0530	commit: 🔒 Finalize Proctoring V2 stable before AI Phase 1 - 2025-06-06
+e7e4a1d46cb5460a19313462b391164588e28bcb e7e4a1d46cb5460a19313462b391164588e28bcb Dejoy Mathai <Dejoy.Mathai@ril.com> 1749211568 +0530	checkout: moving from main to proctoring-v2-backup-2025-06-06
+e7e4a1d46cb5460a19313462b391164588e28bcb e7e4a1d46cb5460a19313462b391164588e28bcb Dejoy Mathai <Dejoy.Mathai@ril.com> 1749211659 +0530	checkout: moving from proctoring-v2-backup-2025-06-06 to proctoring-ai-phase1
+e7e4a1d46cb5460a19313462b391164588e28bcb 25e84fda5d359b8eba47416453038757ba5ef198 Dejoy Mathai <Dejoy.Mathai@ril.com> 1749289577 +0530	commit: 🔧 Fix proctoring session & setup flow to ensure proper test gating

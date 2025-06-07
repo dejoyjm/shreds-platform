@@ -39,3 +39,10 @@ backend/media/**
 !backend/media/.keep
 !backend/media/proctoring_photos/
 !backend/media/proctoring_photos/.keep
+
+# Ignore AI virtualenvs and large vendors
+backend/deepface310/
+backend/proctoring_ai/
+backend/temp_merge_batches.py
+backend/test_ai_batch.py
+backend/test_deepface_match_step1.py
