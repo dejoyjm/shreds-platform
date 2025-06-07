@@ -31,25 +31,63 @@ export default function ProctoringSetup() {
 
   useEffect(() => {
     const fetchConfig = async () => {
-      const res = await fetch(`${API_BASE_URL}/api/proctoring/get-consent/?assignment_id=${assignment_id}&candidate_id=${candidate_id}`);
-      const data = await res.json();
-
-      if (!data?.enforce_proctoring) {
-        console.warn("⚠️ Proctoring not required. Skipping setup.");
-        if (typeof window !== "undefined") {
-          sessionStorage.setItem("proctoring_ready", "true");
-          sessionStorage.setItem("proctoring_session_done", "1");
-        }
-        router.push("/test/section");
+      if (!assignment_id || !candidate_id) {
+        toast.error("Missing session info. Cannot fetch proctoring setup.");
+        console.log("➡️ Routing to /test/");
+        router.push("/test");
         return;
       }
 
-      setConfig(data);
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/proctoring/check-ready/?assignment_id=${assignment_id}&candidate_id=${candidate_id}`);
+        if (!res.ok) {
+          throw new Error("Failed to fetch proctoring config");
+        }
+
+        console.log("📍 candidate_id", candidate_id);
+        console.log("📍 assignment_id", assignment_id);
+
+        const data = await res.json();
+        console.log("📡 FULL proctoring check-ready response:", data);
+
+        if (!data?.enforce_proctoring) {
+          console.warn("⚠️ Proctoring not required. Skipping setup.");
+          sessionStorage.setItem("proctoring_ready", "true");
+          sessionStorage.setItem("proctoring_session_done", "1");
+          router.push("/test/section");
+          return;
+        }
+
+        setConfig({
+          ...data.requirements,
+          enforce_proctoring: data.enforce_proctoring,
+          require_face_photo: data.requirements.require_face_photo_initial,
+          require_id_photo: data.requirements.require_id_photo_initial,
+          require_signature_photo: data.requirements.require_signature_photo_initial,
+        });
+
+        console.log("📡 Proctoring config:", {
+          enforce: data.enforce_proctoring,
+          ready: data.ready,
+          missing: data.missing,
+          config: data.requirements
+        });
+
+      } catch (err) {
+        console.error("❌ Proctoring setup failed:", err);
+        toast.error("Could not load proctoring config. Please retry or contact support.");
+        console.log("➡️ Routing to /test");
+
+        router.push("/test");
+      }
     };
+
     fetchConfig();
   }, []);
 
-  if (!config || !config.enforce_proctoring) return <p>Skipping proctoring...</p>;
+  if (!config) return <p>⏳ Loading proctoring setup...</p>;
+  if (!config.enforce_proctoring) return <p>✅ Proctoring not required.</p>;
+
 
   const stopWebcam = (videoRef) => {
     const stream = videoRef.current?.srcObject;
@@ -94,6 +132,13 @@ export default function ProctoringSetup() {
   };
 
   const handleSubmit = async () => {
+    console.log("📝 Submitting consent with:", {
+          agreed,
+          facePreview,
+          idPreview,
+          signaturePreview
+        });
+
     if (config.require_face_photo && !facePreview && !config.allow_file_upload) return alert("Face photo required");
     if (config.allowed_id_documents?.length > 0 && !idPreview && !config.allow_file_upload) return alert("ID photo required");
     if (config.require_signature_photo && !signaturePreview && !config.allow_file_upload) return alert("Signature required");
@@ -112,7 +157,7 @@ export default function ProctoringSetup() {
     if (facePreview && !facePreview.startsWith("blob:")) await uploadImage(facePreview, "face");
     if (idPreview && !idPreview.startsWith("blob:")) await uploadImage(idPreview, "id", idType);
     if (signaturePreview && !signaturePreview.startsWith("blob:")) await uploadImage(signaturePreview, "signature");
-
+    console.log("➡️ Routing to /test/proctoring-session");
     router.push("/test/proctoring-session");
   };
 

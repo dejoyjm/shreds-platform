@@ -76,12 +76,21 @@ export default function ProctoringSession() {
       try {
         const res = await fetch(`${API_BASE_URL}/api/proctoring/check-ready/?assignment_id=${assignment_id}&candidate_id=${candidate_id}`);
         const data = await res.json();
+        if (!data || Object.keys(data).length === 0) {
+          console.error("❌ Proctoring config API returned empty");
+          setStatus("Proctoring config fetch failed.");
+          return;
+        }
+
         console.log("📡 Proctoring config received", data);
+
         if (!data?.enforce_proctoring) {
           if (typeof window !== "undefined") {
             sessionStorage.setItem("proctoring_ready", "true");
             sessionStorage.setItem("proctoring_session_done", "1");
           }
+          console.log("➡️ Routing to /test from proctoring-session (no proctoring required)");
+
           router.push("/test");
           return;
         }
@@ -166,6 +175,8 @@ export default function ProctoringSession() {
       setStatus("✅ All checks passed. Redirecting to test...");
       sessionStorage.setItem("proctoring_ready", "true");
       sessionStorage.setItem("proctoring_session_done", "1");
+      console.log("➡️ Routing to /test from proctoring-session (no proctoring required)");
+
       router.push("/test");
     }
   }, [flags, sessionToken, proceeding]);

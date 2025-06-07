@@ -56,6 +56,29 @@ export default function SectionPage() {
   const [showSummary, setShowSummary] = useState(false);
 
   let session = null;
+
+const checkProctoring = async (candidate_id, assignment_id) => {
+  const res = await fetch(`${API_BASE_URL}/api/proctoring/check-ready/?assignment_id=${assignment_id}&candidate_id=${candidate_id}`);
+  const result = await res.json();
+
+  if (result.enforce_proctoring && !result.ready) {
+    toast.error("Proctoring not completed. Redirecting...");
+    router.push("/test/proctoring-setup");
+    return false;
+  }
+
+  if (result.enforce_proctoring && result.ready) {
+    const token = sessionStorage.getItem("proctoring_session_token");
+    if (!token) {
+      toast.error("Proctoring session missing. Redirecting...");
+      router.push("/test/proctoring-session");
+      return false;
+    }
+  }
+
+  return true;
+};
+
   if (typeof window !== "undefined") {
     const raw = localStorage.getItem("sessionData") || safeSessionStorageGet("sessionData");
     try {
@@ -83,6 +106,8 @@ export default function SectionPage() {
   if (!session || !session.session_token) {
     console.warn("🚫 Session object is missing or malformed:", session);
   }
+
+
 
   const handleSubmit = async (auto = false) => {
     if (!sectionData?.questions || sectionData.questions.length === 0) {
@@ -247,69 +272,73 @@ export default function SectionPage() {
   }, [sectionData?.section_id]);
 
   useEffect(() => {
+  const doResume = async () => {
+    const candidate_id = session?.candidate_id;
+    const assignment_id = session?.assignment_id || sessionStorage.getItem("assignment_id");
+    const proceed = await checkProctoring(candidate_id, assignment_id);
+
+
+    if (!proceed) return;
+
     if (localStorage.getItem("testCompleted") === "true") {
-      console.log("🛑 Test already completed. Skipping resume fetch.");
       toast.success("✅ You have already completed the test. Redirecting...");
       router.push("/test");
       return;
     }
+
     if (!session) {
-      toast.success("No active session found");
+      toast.error("No active session found");
       router.push("/test");
       return;
     }
+    if (!candidate_id || !assignment_id) {
+      toast.error("Missing session info. Please restart your test.");
+      router.push("/test");
+      return false;
+    }
 
-    fetch(`${API_BASE_URL}/api/resume-section/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        candidate: session.candidate_id,
-        test: session.test_id,
-        attempt_number: session.attempt_number,
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`Resume failed: ${res.status}`);
-        return res.json();
-      })
-    .then((data) => {
-        if (data.status === "completed") {
-          toast.success("✅ Section saved and test completed. You may now close this window.");
-          localStorage.removeItem("sessionData");
-          localStorage.removeItem("savedResponses");
-          localStorage.removeItem("currentQuestionIndex");
-          localStorage.setItem("testCompleted", "true");
-          setLoading(false);
-          return;
-        }
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/resume-section/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          candidate: session.candidate_id,
+          test: session.test_id,
+          attempt_number: session.attempt_number,
+        }),
+      });
 
-        console.log("📦 resume-section returned:", {
-          section_id: data.section_id,
-          time_left_seconds: data.time_left_seconds,
-        });
+      if (!res.ok) throw new Error(`Resume failed: ${res.status}`);
+      const data = await res.json();
 
-        localStorage.setItem(`questions_${data.section_id}`, JSON.stringify(data.questions || []));
+      if (data.status === "completed") {
+        toast.success("✅ Section saved and test completed.");
+        localStorage.clear();  // or remove relevant keys
+        localStorage.setItem("testCompleted", "true");
+        setLoading(false);
+        return;
+      }
 
-        const patchedSession = {
-          ...session,
-          assignment_id: data.assignment_id ?? session.assignment_id
-        };
+      localStorage.setItem(`questions_${data.section_id}`, JSON.stringify(data.questions || []));
+      const patchedSession = { ...session, assignment_id: data.assignment_id ?? session.assignment_id };
       localStorage.setItem("sessionData", JSON.stringify(patchedSession));
 
       const updated = { ...data, questions: data.questions || [] };
       setSectionData(updated);
       sectionDataRef.current = updated;
+      setTimeLeft(data.time_left_seconds ?? 0);
+    } catch (err) {
+      console.error("Resume section failed:", err);
+      toast.error("Something went wrong while loading section.");
+      router.push("/test");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      console.log("📥 setTimeLeft() called with:", data.time_left_seconds);
-      setTimeLeft(data.time_left_seconds ?? 0);  // ✅ Moved AFTER sectionDataRef.current is set
-      })
-      .catch((err) => {
-        console.error("Resume section failed:", err);
-        toast.error("Something went wrong while loading section.");
-        router.push("/test");
-      })
-      .finally(() => setLoading(false));
-  }, [router]);
+  doResume();
+}, [router]);
+
 
   useEffect(() => {
     console.log("🕰️ [TIMER useEffect] Entered with:", {
@@ -355,10 +384,6 @@ export default function SectionPage() {
   }, [currentQuestionIndex]);
 
   const sessionToken = safeSessionStorageGet("proctoring_session_token");
-  const assignmentIdFromSession = safeSessionStorageGet("assignment_id");
-  if (assignmentIdFromSession && !session.assignment_id) {
-    session.assignment_id = parseInt(assignmentIdFromSession);
-  }
 
   const proctoringRequired = safeSessionStorageGet("proctoring_required") === "true";
   const proctoringDone = safeSessionStorageGet("proctoring_session_done") === "1";

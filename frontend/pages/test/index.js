@@ -4,7 +4,6 @@ import { useAntiCheat } from "../../utils/useAntiCheat";
 import { API_BASE_URL } from "@/utils/api";
 import { useProctoring } from "@/components/ProctoringContext";
 
-
 export default function StartSessionPage() {
   const router = useRouter();
   useAntiCheat();
@@ -33,39 +32,34 @@ export default function StartSessionPage() {
       const checkRes = await check.json();
       console.log("🎯 Proctoring readiness response:", checkRes);
 
-      // 🔁 Push config to ProctoringContext
       const freq = Number(checkRes?.proctoring_config?.periodic_screen_capture_sec || 60);
       const boost = Number(checkRes?.proctoring_config?.violation_boost_factor || 1);
       setBaseFrequency(freq);
       setViolationBoostFactor(boost);
       console.log("🧠 Context updated with:", { freq, boost });
 
-
       if (!checkRes.enforce_proctoring) {
+        console.log("🚀 Routing to /test/section (no proctoring required)");
         sessionStorage.setItem("proctoring_ready", "true");
         sessionStorage.setItem("proctoring_session_done", "1");
-        return;
-      }
-
-      if (!checkRes.ready) {
-        console.warn("⚠️ Routing to proctoring-setup: missing required inputs", checkRes.reason);
+        router.push("/test/section");
+      } else if (!checkRes.ready) {
+        console.log("🚀 Routing to /test/proctoring-setup");
         sessionStorage.removeItem("proctoring_session_done");
         router.push("/test/proctoring-setup");
-        return;
+      } else {
+        console.log("🚀 Routing to /test/proctoring-session");
+        sessionStorage.removeItem("proctoring_ready");
+        sessionStorage.removeItem("proctoring_session_done");
+        router.push("/test/proctoring-session");
       }
-
-      // All static setup done, go to session-level proctoring
-      console.log("✅ Static inputs done, proceeding to proctoring-session for live stream check.");
-      sessionStorage.removeItem("proctoring_ready");
-      sessionStorage.removeItem("proctoring_session_done");
-      router.push("/test/proctoring-session");
     } catch (err) {
       console.error("Check-ready failed", err);
       setStatusMsg("Error checking proctoring readiness.");
     }
   };
 
-    const handleVerify = async () => {
+  const handleVerify = async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/verify-secrets/`, {
         method: "POST",
@@ -87,15 +81,19 @@ export default function StartSessionPage() {
       sessionStorage.setItem("secret1", secret1);
       sessionStorage.setItem("secret2", secret2);
 
-      if (data.assignments.length > 0) {
-        const proctoringDone = sessionStorage.getItem("proctoring_session_done");
-        if (proctoringDone !== "1") {
-          await verifyAndProceed(data.candidate_id, data.assignments[0].assignment_id);
-          return;
-        }
-      }
+        if (data.assignments.length > 0) {
+          const activeAssignment = data.assignments.find(a => a.can_start);
+          const proctoringDone = sessionStorage.getItem("proctoring_session_done");
 
-      setStatusMsg("No assignments available.");
+          if (activeAssignment && proctoringDone !== "1") {
+            await verifyAndProceed(data.candidate_id, activeAssignment.assignment_id);
+            return;
+          }
+        }
+
+    else {
+          setStatusMsg("No assignments available.");
+        }
     } catch (err) {
       console.error("Verify failed", err);
       if (err instanceof TypeError && err.message.includes("Failed to fetch")) {
@@ -106,32 +104,32 @@ export default function StartSessionPage() {
     }
   };
 
-    useEffect(() => {
-      const candidate = sessionStorage.getItem("candidate_id");
-      const assignment = sessionStorage.getItem("assignment_id");
-      const flowStarted = sessionStorage.getItem("test_flow_started");
-      const proctoringReady = sessionStorage.getItem("proctoring_ready");
-      const proctoringDone = sessionStorage.getItem("proctoring_session_done");
+  useEffect(() => {
+    const candidate = sessionStorage.getItem("candidate_id");
+    const assignment = sessionStorage.getItem("assignment_id");
+    const flowStarted = sessionStorage.getItem("test_flow_started");
+    const proctoringReady = sessionStorage.getItem("proctoring_ready");
+    const proctoringDone = sessionStorage.getItem("proctoring_session_done");
 
-      console.log("📍 Index reentry check", { candidate, assignment, proctoringReady, proctoringDone });
+    console.log("📍 Index reentry check", { candidate, assignment, proctoringReady, proctoringDone });
 
-      if (candidate && assignment && flowStarted && proctoringReady === "true" && proctoringDone === "1") {
-        // Do nothing, proctoring complete
-        console.log("✅ Proctoring complete, staying on index.");
-      } else if (candidate && assignment && flowStarted) {
-        verifyAndProceed(candidate, assignment);  // will push to /proctoring-session or /proctoring-setup
-      }
-    }, []);
-
+    if (candidate && assignment && flowStarted && proctoringReady === "true" && proctoringDone === "1") {
+      console.log("✅ Proctoring complete, staying on index.");
+    } else if (candidate && assignment && flowStarted) {
+      verifyAndProceed(candidate, assignment);
+    }
+  }, []);
 
   const handleStart = async () => {
     if (!selectedTest) return alert("Select a test first");
     if (!agreedToRules) return alert("Please agree to the exam rules first.");
 
     const ready = sessionStorage.getItem("proctoring_ready");
-    if (ready !== "true") {
-      alert("Proctoring not yet completed. Please finish setup.");
-      return;
+    const sessionDone = sessionStorage.getItem("proctoring_session_done");
+
+    if (ready !== "true" || sessionDone !== "1") {
+      alert("🔒 Proctoring not complete. Redirecting...");
+      return router.push("/test/proctoring-setup");
     }
 
     const now = new Date();
@@ -147,7 +145,6 @@ export default function StartSessionPage() {
     } catch (err) {
       console.warn("Fullscreen failed", err);
     }
-
 
     const res = await fetch(`${API_BASE_URL}/api/start-session/`, {
       method: "POST",
@@ -213,11 +210,7 @@ export default function StartSessionPage() {
             ))}
           </div>
         ) : (
-          <p style={{ color: "gray", fontStyle: "italic", marginTop: "0.5rem" }}>
-            You don&apos;t have any currently valid test assignments.<br />
-            Your test window might have expired or the next one isn&apos;t open yet.<br />
-            Please check back later or contact your coordinator.
-          </p>
+          <p style={{ color: "blue" }}>{statusMsg || "No assignments available."}</p>
         )}
       </div>
 
